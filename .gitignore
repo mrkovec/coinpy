@@ -45,3 +45,7 @@ $RECYCLE.BIN/
 Network Trash Folder
 Temporary Items
 .apdisk
+*.pyc
+tests/.coverage
+*.bat
+tests/htmlcov/
