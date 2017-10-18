@@ -48,4 +48,5 @@ Temporary Items
 *.pyc
 tests/.coverage
 *.bat
-tests/htmlcov/
+*htmlcov/
+*.coverage

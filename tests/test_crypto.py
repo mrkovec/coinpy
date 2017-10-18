@@ -1,5 +1,5 @@
 import unittest
-import __setpaths__ 
+from .__setpaths__ import *
 
 from coinpy.core.crypto import Hash, hash_from_str, hash_from_obj
 

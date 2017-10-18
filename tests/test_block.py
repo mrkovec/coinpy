@@ -1,7 +1,7 @@
 import unittest
 import json
 
-import __setpaths__
+from .__setpaths__ import *
 
 from coinpy.core.ioput import IOput, KEY_VALUE, KEY_FROM_ADDR, KEY_TO_ADDR
 from coinpy.core.trans import Trans, KEY_TIME_STAMP, KEY_INPS, KEY_OUTPS
