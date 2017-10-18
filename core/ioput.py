@@ -13,7 +13,7 @@ class IOput(CryptoObj):
         self.to_addr = init_to
 
     @classmethod
-    def from_json_obj(cls, json_obj: object) -> 'IOput':
+    def from_obj(cls, json_obj: object) -> 'IOput':
         new_ioput = cls(-1,'','')
         new_ioput.process_verify_obj(json_obj)
         return new_ioput

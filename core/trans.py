@@ -20,16 +20,16 @@ class Trans(CryptoObj):
         self.outps: List[IOput] = []
 
     @classmethod
-    def from_json_obj(cls, json_obj: object) -> 'Trans':
+    def from_obj(cls, json_obj: object) -> 'Trans':
         new_trx = cls()
         new_trx.process_verify_obj(json_obj)
         return new_trx
 
-    def add_inp(self, inp: IOput) -> None:
-        self.inps.append(inp)
-
-    def add_outp(self, outp: IOput) -> None:
-        self.outps.append(outp)
+    @classmethod
+    def from_json(cls, json_str: str) -> 'Trans':
+        new_trx = cls()
+        new_trx.process_verify_json(json_str)
+        return new_trx
 
     def _prepare_data(self) -> object:
         return {KEY_TIME_STAMP: self.time_stamp, KEY_INPS: self.inps, KEY_OUTPS: self.outps}
@@ -38,24 +38,12 @@ class Trans(CryptoObj):
         self.id = id
         self.time_stamp = data[KEY_TIME_STAMP]
         for inp in data[KEY_INPS]:
-             self.add_inp(IOput.from_json_obj(inp))
+             self.add_inp(IOput.from_obj(inp))
         for outp in data[KEY_OUTPS]:
-            self.add_outp(IOput.from_json_obj(outp))
+            self.add_outp(IOput.from_obj(outp))
 
-# def trx_from_json_obj(json_obj) -> Transaction:
-#     try:
-#         for trx_hash, trx_data in json_obj.items():
-#             new_trx = Transaction()
-#             new_trx.time_stamp = trx_data[KEY_TIME_STAMP]
-#             for inp in trx_data[KEY_INPS]:
-#                 new_trx.add_input(ioput_from_json_obj(inp))
-#             for outp in trx_data[KEY_OUTPS]:
-#                 new_trx.add_output(ioput_from_json_obj(outp))
-#             if new_trx.check_hash(trx_hash):
-#                 return new_trx
-#     except:
-#         raise DataError('incorrect trx data')
-#     raise HashError('incorrect trx data')
+    def add_inp(self, inp: IOput) -> None:
+        self.inps.append(inp)
 
-# def trx_from_json(json_string: str) -> Optional[Transaction]:
-#     return trx_from_json_dict(json.loads(json_string))
+    def add_outp(self, outp: IOput) -> None:
+        self.outps.append(outp)

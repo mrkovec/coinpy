@@ -5,6 +5,12 @@ class Error(Exception):
         super().__init__(msg + (": %s" % original_exception))
         self.original_exception = original_exception
 
+class HashError(Error):
+    pass
+
+class DataError(Error):
+    pass
+
 
 # class HashError(Error):
 #     # """Exception raised for errors in the input.
