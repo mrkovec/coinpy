@@ -9,4 +9,4 @@ script:
   - ls
   - python -m coverage run -m unittest discover 
 after_success:  
-  - coveralls  
+  - coveralls -b .
