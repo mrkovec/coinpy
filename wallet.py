@@ -1,5 +1,5 @@
 from typing import List
-from ecdsa import SigningKey, SECP256k1
+from ecdsa import SigningKey, SECP256k1 # pragma: no cover
 import json
 from base64 import b64encode, b64decode
 
