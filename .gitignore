@@ -50,3 +50,4 @@ tests/.coverage
 *.bat
 *htmlcov/
 *.coverage
+*.json

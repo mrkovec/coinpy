@@ -8,7 +8,10 @@ class Wallet(object):
         self.privkeys: List[str] = []
         #with  open('data.txt', 'w') as outfile:
         #     json.dump(data, outfile)
-        self.load()
+        try:
+            self.load()
+        except:
+            pass
 
     def load(self) -> None:
         with open('wallet.json', 'r', encoding="utf-8") as infile:
