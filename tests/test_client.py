@@ -3,7 +3,7 @@ import json
 
 from .__setpaths__ import *
 
-from coinpy.core.client import Client
+from coinpy.client import Client
 
 class TestClientMethods(unittest.TestCase):
     def setUp(self):

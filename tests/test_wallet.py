@@ -1,7 +1,7 @@
 import unittest
 
 from .__setpaths__ import *
-from coinpy.core.wallet import Wallet
+from coinpy.wallet import Wallet
 
 class TestWalletMethods(unittest.TestCase):
     def setUp(self):
