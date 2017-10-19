@@ -1,5 +1,5 @@
 from typing import List
-from ecdsa import SigningKey, SECP256k1 # pragma: no cover
+from ecdsa import SigningKey, SECP256k1
 import json
 from base64 import b64encode, b64decode
 
@@ -22,5 +22,5 @@ class Wallet(object):
             json.dump(self.privkeys, outfile)
 
     def new_privkey(self) -> None:
-        self.privkeys.append(b64encode(SigningKey.generate(curve=SECP256k1).to_string()).decode()) # pragma: no cover
+        self.privkeys.append(b64encode(SigningKey.generate(curve=SECP256k1).to_string()).decode())  
         self.save()
