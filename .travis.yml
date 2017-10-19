@@ -10,5 +10,6 @@ script:
   - python -m coverage run -m unittest tests/test_crypto.py
   - python -m coverage run -m unittest tests/test_ioput.py
   - python -m coverage run -m unittest tests/test_trans.py
+  - python -m coverage run -m unittest tests/test_wallet.py
 after_success:  
   - coveralls
