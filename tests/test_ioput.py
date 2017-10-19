@@ -2,16 +2,11 @@ import unittest
 import json
 
 from .__setpaths__ import *
-
 from coinpy.core.ioput import IOput, KEY_VALUE, KEY_FROM_ADDR, KEY_TO_ADDR
-# from core.errors import Error
 
 class TestIOputMethods(unittest.TestCase):
     def setUp(self):
         self.input = IOput(100, 'a', 'b')
-
-    def test_prepare_data(self):
-        self.assertEqual(self.input._prepare_data(), {KEY_VALUE: 100, KEY_FROM_ADDR: "a", KEY_TO_ADDR: "b"})
 
     def test_from_json_obj(self):
         new_ioput = IOput.from_obj(JSON_OBJ)

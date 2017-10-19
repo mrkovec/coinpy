@@ -13,7 +13,7 @@ class TestBlockMethods(unittest.TestCase):
         trx.add_inp(IOput(100, 'a', 'b'))
         trx.add_outp(IOput(10, 'b', 'c'))
         trx.add_outp(IOput(90, 'b', 'b'))
-        self.block = Block('abc', 345)
+        self.block = Block(345)
         self.block.add_trx(trx)
 
     def test_blk_from_json_obj(self):
@@ -23,9 +23,9 @@ class TestBlockMethods(unittest.TestCase):
 
 
 JSON_OBJ = {
-    "Kt4gS3gfUeb6KWn8f1VFAx4yvB6VZyNWIETHXPb86bkCOLw6rbU8LdAwYgpipDLmkg7mZbmAW9rdtbipYoOymw==":{
+    "57Y1JZJUte6+LGcIpyYqgtgoEp7iovAMIU9anpDZSIHw6Oig62KDs0cabSMqiCj9AvqnqI+UrVte+ySx9Cl10w==":{
         KEY_TIME_STAMP:345,
-        KEY_PREV_BLOCK:"abc",
+        KEY_PREV_BLOCK:"",
         KEY_TRXS:[
          {
             "4rD2KC73vKnGxWG9vCidOGrJxPc8Ruuu9pYg5z6GC6ZNHAfrgurSDJLbAz/yVR95S6dJrJgCtvRkfbButCryWg==":{
