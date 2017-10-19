@@ -6,9 +6,9 @@ install:
   - pip install coverage
   - pip install ecdsa
 script:
-  - python -m coverage run tests\test_block.py
-  - python -m coverage run tests\test_crypto.py
-  - python -m coverage run tests\test_ioput.py
-  - python -m coverage run tests\test_trans.py
+  - python -m coverage run tests/test_block.py
+  - python -m coverage run tests/test_crypto.py
+  - python -m coverage run tests/test_ioput.py
+  - python -m coverage run tests/test_trans.py
 after_success:  
   - coveralls
