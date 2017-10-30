@@ -1,53 +1,98 @@
 import unittest
-from json import loads
+import io
 
-from .__setpaths__ import *
-from coinpy.core.crypto import Hash, SerializableObject, SerializableObjectEncoder
-from coinpy.core.errors import HashError, DataError
-# from coinpy.core.ioput import IOput, KEY_VALUE, KEY_FROM_ADDR, KEY_TO_ADDR
-# from coinpy.core.errors import HashError, DataError
+from .test_setup import *
 
-class TestHash(unittest.TestCase):
-    def test_hash_json(self):
-        new_hash = Hash.from_json('{"key": "value"}')
-        self.assertEqual(new_hash.str_, 'm4AXOCEGsembCniAfA4zPz8c/XEAvVoy02+//BKP6jkOV/dB12j5y1/vdonktzIA71v8fyARyWf1CnEjj4ia4w==')
-
-class TestSerializableObjectEncoder(unittest.TestCase):
-    def setUp(self):
-        self.ser_obj = Serializable(1)
-        self.not_ser_obj = NotSerializable(1)
-        self.not_impl_obj = NotImplemented(1)
-
-    def test_encode_serializable(self):
-        json_str = self.ser_obj.to_json()
-        new_obj = Serializable(-1)
-        new_obj.verify_and_unserialize(loads(json_str))
-        self.assertTrue(self.ser_obj.verify_hash(new_obj.id))
-
-    def test_encode_not_serializable(self):
-        with self.assertRaises(HashError):
-            SerializableObjectEncoder().encode(self.not_ser_obj)
-
-    def test_encode_not_implemented(self):
-        with self.assertRaises(DataError):
-            SerializableObjectEncoder().encode(self.not_impl_obj)
+# from coinpy.core.crypto import Hash, SerializableObject, SerializableObjectEncoder, Privkey, Pubkey
+from coinpy.core.crypto import (
+    Privkey, Pubkey
+)
+from coinpy.core.errors import (
+    HashError, DataError
+)
 
 
-class Serializable(SerializableObject):
-    def __init__(self, data: int) -> None:
-        self.data = data
-    def _serialize(self) -> object:
-        return {'data': self.data}
-    def _unserialize(self, obj_data: object) -> None:
-        self.data = obj_data['data']
+# class TestSerializableObjectEncoder(unittest.TestCase):
+#     def setUp(self):
+#         self.ser_obj = Serializable(1)
+#         self.not_ser_obj = NotSerializable(1)
+#         self.not_impl_obj = NotImplemented(1)
+#
+#     def test_encode_serializable(self):
+#         json_str = self.ser_obj.to_json()
+#         new_obj = Serializable(-1)
+#         new_obj.verify_and_unserialize_json(json_str)
+#         self.assertTrue(self.ser_obj.verify_hash(new_obj.id))
+#
+#     def test_encode_not_serializable(self):
+#         with self.assertRaises(DataError):
+#             SerializableObjectEncoder().encode(self.not_ser_obj)
+#
+#     def test_encode_not_implemented(self):
+#         with self.assertRaises(DataError):
+#             SerializableObjectEncoder().encode(self.not_impl_obj)
+#         with self.assertRaises(DataError):
+#             self.not_impl_obj.verify_and_unserialize_json(self.ser_obj.to_json())
+#
+#     def test_encode_incorrect_data(self):
+#         with self.assertRaises(DataError):
+#             self.ser_obj.verify_and_unserialize_json('{"data":}')
+#
+#     def test_encode_incorrect_hash(self):
+#         with self.assertRaises(HashError):
+#             self.ser_obj.verify_and_unserialize_json('{"byPSfDifG8auTAa69VrNIm46XUIy4sLUiflTBHlKwDjnxOAANwKUPNBB2C4VAC9AOf0Jnff/OVnd0dMWLtz3Dw==": {"data": 1}}')
 
-class NotSerializable():
-    def __init__(self, data: int) -> None:
-        self.data = data
 
-class NotImplemented(SerializableObject):
-    def __init__(self, data: int) -> None:
-        self.data = data
+class TestPrivkey(unittest.TestCase):
+    def test_from_pem_and_sign(self) -> None:
+        sk = Privkey.from_pem(io.StringIO(PEM_FILE_DATA))
+        sgn = sk.sign(b'abc')
+        self.assertTrue(sk.pubkey.verify(sgn, b'abc'))
+
+class TestPubkey(unittest.TestCase):
+    def setUp(self) -> None:
+        self.sk = Privkey.from_pem(io.StringIO(PEM_FILE_DATA))
+        self.sgn = self.sk.sign(b'abc')
+
+    def test_from_str(self) -> None:
+        vk = TEST_PUBKEY
+        self.assertTrue(vk.verify(self.sgn, b'abc'))
+
+
+
+#
+#     def test_str(self):
+#         vk = Pubkey.from_str(self.sk.pubkey.str_)
+#         self.assertTrue(vk.verify(self.sgn, 'abc'))
+#
+#     def test_address(self):
+#         vk = self.sk.pubkey
+#         self.assertTrue(self.sk.pubkey.verify_address('lZXmclFER25cE5WRjMuWQaz2g2MzFMat'))
+#         with self.assertRaises(DataError):
+#             self.sk.pubkey.verify_address('lZXmclFER25cE5WRjMuWQaz2g2MzFMax')
+#
+#
+#
+# class Serializable(SerializableObject, object_hash = Hash.new(64, b'test')):
+#     def __init__(self, data: int) -> None:
+#         self.data = data
+#     def _serialize(self) -> object:
+#         return {'data': self.data}
+#     def _unserialize(self, obj_data: object) -> None:
+#         self.data = obj_data['data']
+#
+#
+# class NotSerializable():
+#     def __init__(self, data: int) -> None:
+#         self.data = data
+#
+#
+# class NotImplemented(SerializableObject, object_hash = Hash.new(64, b'test')):
+#     def __init__(self, data: int) -> None:
+#         self.data = data
+
+
+
 
 
 # class TestCryptoFunctions(unittest.TestCase):

@@ -1,66 +1,56 @@
 import unittest
-import json
 
-from .__setpaths__ import *
+from .test_setup import *
 
-from coinpy.core.ioput import IOput, KEY_VALUE, KEY_FROM_ADDR, KEY_TO_ADDR
-from coinpy.core.trans import Trans, KEY_TIME_STAMP, KEY_INPS, KEY_OUTPS
-from coinpy.core.block import Block, KEY_PREV_BLOCK, KEY_TRXS
+from coinpy.core.output import Output
+from coinpy.core.trans import Trans
+from coinpy.core.block import (
+    Block, BlockID
+)
 
 class TestBlockMethods(unittest.TestCase):
-    def setUp(self):
+    def setUp(self) -> None:
         trx = Trans(123)
-        trx.add_inp(IOput(100, 'a', 'b'))
-        trx.add_outp(IOput(10, 'b', 'c'))
-        trx.add_outp(IOput(90, 'b', 'b'))
-        self.block = Block(345)
-        self.block.add_trx(trx)
+        trx.add_inp(Output(100, TEST_PUBADDR).id)
+        trx.add_outp(Output(10, TEST_PUBADDR))
+        trx.add_outp(Output(90, TEST_PUBADDR))
+        prev_blk = Block(123)
+        self.blk = Block(345, prev_blk)
+        self.blk.add_trx(trx.id)
 
-    def test_blk_from_json_obj(self):
-        new_blk = Block.from_obj(JSON_OBJ)
-        self.assertIsInstance(new_blk, Block)
-        self.assertIs(type(new_blk), Block)
+    def test_blk_from_json_obj(self) -> None:
+        blk_new = Block.from_json(self.blk.to_json())
+        self.assertIsInstance(blk_new, Block)
+        self.assertIs(type(blk_new), Block)
+        self.assertTrue(blk_new.id == self.blk.id)
 
-
-JSON_OBJ = {
-    "57Y1JZJUte6+LGcIpyYqgtgoEp7iovAMIU9anpDZSIHw6Oig62KDs0cabSMqiCj9AvqnqI+UrVte+ySx9Cl10w==":{
-        KEY_TIME_STAMP:345,
-        KEY_PREV_BLOCK:"",
-        KEY_TRXS:[
-         {
-            "4rD2KC73vKnGxWG9vCidOGrJxPc8Ruuu9pYg5z6GC6ZNHAfrgurSDJLbAz/yVR95S6dJrJgCtvRkfbButCryWg==":{
-               KEY_TIME_STAMP:123,
-               KEY_INPS:[
-                  {
-                     "jX8Z/UvTi+GO6i8jN6/XVkHI1eFW3TZCj9r/ATmma1sJ5g7kA8legR0zj12zbJehcx1d4teE8QNTx+RBlEepnw==":{
-                        KEY_VALUE:100,
-                        KEY_FROM_ADDR:"a",
-                        KEY_TO_ADDR:"b"
-                     }
-                  }
-               ],
-               KEY_OUTPS:[
-                  {
-                     "oiklrkgJVZq1p5zR7pu8ecZPoR4vXB/kd6xjOIJOPiwPwCQa6O1jyWgmIRZY3Zi85aet8UYoX9wxwkNoc7in4g==":{
-                        KEY_VALUE:10,
-                        KEY_FROM_ADDR:"b",
-                        KEY_TO_ADDR:"c"
-                     }
-                  },
-                  {
-                     "cYYvpgx+IksdERjNQ8eqXPzvEXTyey+Dhw2jNW6yeNZiKdsV2bWXTeU3J3ERe7AH1lx7zmFNxyS7cEo3cxYctw==":{
-                        KEY_VALUE:90,
-                        KEY_FROM_ADDR:"b",
-                        KEY_TO_ADDR:"b"
-                     }
-                  }
-               ]
-            }
-         }
-      ]
-   }
-}
-
-
-if __name__ == '__main__':
-    unittest.main()
+# import unittest
+# from json import loads as json_loads
+#
+# from .__setpaths__ import *
+#
+# from coinpy.core.ioput import IOput, KEY_VALUE, KEY_FROM_ADDR, KEY_TO_ADDR
+# from coinpy.core.trans import Trans, KEY_TIME_STAMP, KEY_INPS, KEY_OUTPS
+# from coinpy.core.block import Block, KEY_PREV_BLOCK, KEY_TRXS
+#
+# class TestBlockMethods(unittest.TestCase):
+#     def setUp(self):
+#         trx = Trans(123)
+#         trx.add_inp(IOput(100, 'a', 'b'))
+#         trx.add_outp(IOput(10, 'b', 'c'))
+#         trx.add_outp(IOput(90, 'b', 'b'))
+#         self.block = Block(345)
+#         self.block.add_trx(trx)
+#
+#     def test_blk_from_json_obj(self):
+#         new_blk = Block.from_obj(json_loads(self.block.to_json()))
+#         self.assertIsInstance(new_blk, Block)
+#         self.assertIs(type(new_blk), Block)
+#         self.assertTrue(self.block.verify_hash(new_blk.id))
+#
+#
+#
+#
+#
+# if __name__ == '__main__':
+#     unittest.main()
