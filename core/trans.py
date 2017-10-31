@@ -9,7 +9,7 @@ from .crypto import (
 )
 from .errors import DataError
 
-from . import List, JsonDict, Optional
+from . import List, JsonDict, Optional, NewType
 
 KEY_TRANS_TIME_STAMP = 'time_stamp'
 KEY_TRANS_INPS = 'inps'
@@ -18,23 +18,25 @@ KEY_TRANS_SIGN = 'sign'
 KEY_TRANS_SIGN_PUBKEY = 'pubkey'
 
 
-class TransHash(Hash, digest_size = 33, person = b'TransHash'):
-    pass
+TransHash = Hash(digest_size = 33, person = b'TransHash')
+# class TransHash(Hash, digest_size = 33, person = b'TransHash'):
+#     pass
 
-
-class TransID(ID, id_hash = TransHash):
-    @classmethod
-    def from_obj(cls, json_obj: JsonDict) -> 'TransID':
-        trx_new = cls()
-        trx_new.unserialize(json_obj)
-        return trx_new
+TransID = NewType('TransID', ID)
+# class TransID(ID, id_hash = TransHash):
+#     pass
+    # @classmethod
+    # def from_obj(cls, json_obj: JsonDict) -> 'TransID':
+    #     trx_new = cls()
+    #     trx_new.unserialize(json_obj)
+    #     return trx_new
 
 
 class Trans(Serializable):
     # __id: TransID
 
-    def __init__(self, time_stamp: float = None, inps: List[OutputID] = None, outps: List[Output] = None) -> None:
-        self.__id = TransID()
+    def __init__(self, time_stamp: float, inps: List[OutputID], outps: List[Output]) -> None:
+        # self.__id = TransID()
         # if time_stamp is None:
         #     self.time_stamp = time.time()
         # else:
@@ -44,6 +46,7 @@ class Trans(Serializable):
         self.outps = outps
         self.signature: Optional[bytes] = None
         self.signature_pubkey: Optional[Pubkey] = None
+
         # if signing_key is not None:
         #     self.sign(signing_key)
 
@@ -55,9 +58,10 @@ class Trans(Serializable):
             KEY_TRANS_OUTPS: self.outps,
         }
         self.signature_pubkey, self.signature = signing_key.sign(SerializableEncoder().encode(data).encode('utf-8'))
+        self.__id = TransID(ID(TransHash.digest(str(self).encode('utf-8'))))
 
 
-    def serialize(self) -> JsonDict:
+    def _serialize(self) -> JsonDict:
         # self.validate()
         return {
             KEY_TRANS_TIME_STAMP: self.time_stamp,
@@ -67,33 +71,32 @@ class Trans(Serializable):
             KEY_TRANS_SIGN_PUBKEY : str(self.signature_pubkey)
         }
 
-    def validate(self) -> None:
-        if self.time_stamp is None or self.inps is None or self.outps is None or self.signature is None or self.signature_pubkey is None:
-            raise DataError('uncomplete data')
+    def __bool__(self) -> bool:
+        return (self.time_stamp is not None and self.inps is not None and self.outps is not None
+            and self.signature is not None and self.signature_pubkey is not None)
 
-    def unserialize(self, json_obj: JsonDict) -> None:
+    def _unserialize(self, json_obj: JsonDict) -> None:
         self.time_stamp = json_obj[KEY_TRANS_TIME_STAMP]
+        self.inps = []
         for inp in json_obj[KEY_TRANS_INPS]:
-            if self.inps is None:
-                self.inps = []
-            self.inps.append(OutputID.from_obj(inp))
+            self.inps.append(OutputID(ID(str_to_bytes(inp))))
+        self.outps = []
         for outp in json_obj[KEY_TRANS_OUTPS]:
-            if self.outps is None:
-                self.outps = []
-            self.outps.append(Output.from_obj(outp))
+            self.outps.append(Output.unserialize(outp))
         self.signature = str_to_bytes(json_obj[KEY_TRANS_SIGN])
         self.signature_pubkey = Pubkey(str_to_bytes(json_obj[KEY_TRANS_SIGN_PUBKEY]))
+        self.__id = TransID(ID(TransHash.digest(str(self).encode('utf-8'))))
         # self.validate()
 
-    @classmethod
-    def from_json(cls, json_str: str) -> 'Trans':
-        new_outp = cls()
-        new_outp.unserialize_json(json_str)
-        return new_outp
+    # @classmethod
+    # def from_json(cls, json_str: str) -> 'Trans':
+    #     new_outp = cls()
+    #     new_outp.unserialize_json(json_str)
+    #     return new_outp
 
     @property
     def id(self) -> TransID:
-        self.__id.digest(self.to_json().encode('utf-8'))
+        # self.__id.digest(self.to_json().encode('utf-8'))
         return self.__id
 
     # def add_inp(self, inp: OutputID) -> None:
