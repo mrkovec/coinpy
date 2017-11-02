@@ -11,6 +11,9 @@ from .errors import DataError, ValidationError
 
 from . import List, JsonDict, Optional, NewType
 
+TRANS_VERSION = 1
+
+KEY_TRANS_VERSION = 'ver'
 KEY_TRANS_TIME_STAMP = 'time_stamp'
 KEY_TRANS_INPS = 'inps'
 KEY_TRANS_OUTPS = 'outps'
@@ -24,6 +27,7 @@ TransID = NewType('TransID', ID)
 
 class Trans(Serializable):
     def __init__(self, time_stamp: float, inps: List[OutputID], outps: List[Output]) -> None:
+        self.version = TRANS_VERSION
         self.time_stamp = time_stamp
         self.inps = inps
         self.outps = outps
@@ -32,6 +36,7 @@ class Trans(Serializable):
 
     def sign(self, signing_key: Privkey) -> None:
         data = {
+            KEY_TRANS_VERSION: self.version,
             KEY_TRANS_TIME_STAMP: self.time_stamp,
             KEY_TRANS_INPS: self.inps,
             KEY_TRANS_OUTPS: self.outps,
@@ -42,6 +47,7 @@ class Trans(Serializable):
 
     def _serialize(self) -> JsonDict:
         return {
+            KEY_TRANS_VERSION: self.version,
             KEY_TRANS_TIME_STAMP: self.time_stamp,
             KEY_TRANS_INPS: self.inps,
             KEY_TRANS_OUTPS: self.outps,
@@ -57,6 +63,7 @@ class Trans(Serializable):
 
     def _unserialize(self, json_obj: JsonDict) -> None:
         try:
+            self.version = json_obj[KEY_TRANS_VERSION]
             self.time_stamp = json_obj[KEY_TRANS_TIME_STAMP]
             self.inps = []
             for inp in json_obj[KEY_TRANS_INPS]:
