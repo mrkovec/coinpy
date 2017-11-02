@@ -1,33 +1,8 @@
 class Error(Exception):
     pass
-    # """Base class for exceptions in this module."""
-    # def __init__(self, msg: str = None, original_exception: Exception = None) -> None:
-    #     # super(Error, self).__init__(msg + (": %s" % original_exception))
-    #     self.original_exception = original_exception
-    #     super().__init__(f'{msg}->{original_exception!r}')
-
-# class HashError(Error):
-#     pass
-#
 class DataError(Error):
     pass
 class SerializeError(Error):
     pass
 class ValidationError(Error):
     pass
-
-
-# class HashError(Error):
-#     # """Exception raised for errors in the input.
-#     #
-#     # Attributes:
-#     #     expression -- input expression in which the error occurred
-#     #     message -- explanation of the error
-#     # """
-#
-#     def __init__(self, message: str) -> None:
-#         self.message = message
-#
-# class DataError(Error):
-#     def __init__(self, message: str) -> None:
-#         self.message = message

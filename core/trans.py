@@ -54,9 +54,6 @@ class Trans(Serializable):
                 or self.signature is None or self.signature_pubkey is None
                 or len(self.inps) == 0 or len(self.outps) == 0):
             raise ValidationError
-    # def __bool__(self) -> bool:
-    #     return (self.time_stamp is not None and self.inps is not None and self.outps is not None
-    #         and self.signature is not None and self.signature_pubkey is not None)
 
     def _unserialize(self, json_obj: JsonDict) -> None:
         try:
