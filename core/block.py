@@ -1,63 +1,81 @@
 import time
 import json
+import logging
+
 
 from . import (
-    List, JsonDict
+    List, JsonDict, NewType
 )
 from .trans import (
     Trans, TransID
 )
 from .crypto import (
-    Hash, Serializable, ID
+    Hash, Serializable, ID, Utils
 )
+from .errors import DataError, ValidationError
+# from .output import OutputID
+
+logger = logging.getLogger(__name__)
 
 KEY_BLOCK_TIME_STAMP = 'time_stamp'
 KEY_BLOCK_PREV_BLOCK = 'prev_block'
 KEY_BLOCK_TRXS = 'trxs'
 
-class BlockHash(Hash, digest_size = 33, person = b'BlockHash'):
-    pass
+BlockHash = Hash(digest_size = 33, person = b'BlockHash')
+BlockID = NewType('BlockID', ID)
 
-class BlockID(ID, id_hash = BlockHash):
-    @classmethod
-    def from_obj(cls, json_obj: JsonDict) -> 'BlockID':
-        blk_new = cls()
-        blk_new.unserialize(json_obj)
-        return blk_new
+# class BlockHash(Hash, digest_size = 33, person = b'BlockHash'):
+#     pass
+#
+# class BlockID(ID, id_hash = BlockHash):
+#     @classmethod
+#     def from_obj(cls, json_obj: JsonDict) -> 'BlockID':
+#         blk_new = cls()
+#         blk_new.unserialize(json_obj)
+#         return blk_new
 
 class Block(Serializable):
-    __id: BlockID
+    # __id: BlockID
 
-    def __init__(self, time_stamp: float = None, prev_blk: 'Block' = None) -> None:
-        self.__id = BlockID()
-        if prev_blk is not None:
-            self.prev_block = prev_blk.id
-        else:
-            self.prev_block = BlockID(b'')
-        if time_stamp is None:
-            self.time_stamp = time.time()
-        else:
-            self.time_stamp = time_stamp
-        self.trxs: List[TransID] = []
+    def __init__(self, time_stamp: float, prev_blk: 'Block', trxs: List[TransID] = None) -> None:
+        prev_blk.validate()
+        self.prev_block_id = prev_blk.id
+        self.time_stamp = time_stamp
+        self.trxs = trxs
+        self.__id = BlockID(ID(BlockHash.digest(str(self).encode('utf-8'))))
 
-    def serialize(self) -> JsonDict:
-        return {KEY_BLOCK_TIME_STAMP: self.time_stamp, KEY_BLOCK_PREV_BLOCK: self.prev_block, KEY_BLOCK_TRXS: self.trxs}
+    def _serialize(self) -> JsonDict:
+        return {
+            KEY_BLOCK_TIME_STAMP: self.time_stamp,
+            KEY_BLOCK_PREV_BLOCK: self.prev_block_id,
+            KEY_BLOCK_TRXS: self.trxs
+        }
 
-    def unserialize(self, json_obj: JsonDict) -> None:
-        self.time_stamp = json_obj[KEY_BLOCK_TIME_STAMP]
-        self.prev_block = BlockID.from_obj(json_obj[KEY_BLOCK_PREV_BLOCK])
-        for trx in json_obj[KEY_BLOCK_TRXS]:
-            self.add_trx(TransID.from_obj(trx))
+    def _unserialize(self, json_obj: JsonDict) -> None:
+        try:
+            self.time_stamp = json_obj[KEY_BLOCK_TIME_STAMP]
+            self.prev_block_id = BlockID(ID(Utils.str_to_bytes(json_obj[KEY_BLOCK_PREV_BLOCK])))
+            self.trxs = []
+            for trx in json_obj[KEY_BLOCK_TRXS]:
+                self.trxs.append(TransID(ID(Utils.str_to_bytes(trx))))
+        except Exception as e:
+            raise DataError(str(e)) from e
+        self.__id = BlockID(ID(BlockHash.digest(str(self).encode('utf-8'))))
 
-    @classmethod
-    def from_json(cls, json_str: str) -> 'Block':
-        new_blk = cls()
-        new_blk.unserialize_json(json_str)
-        return new_blk
+
+    def validate(self) -> None:
+        if (self.time_stamp is None or self.prev_block_id is None or self.trxs is None
+                or len(self.trxs) == 0):
+            raise ValidationError
+    # @classmethod
+    # def from_json(cls, json_str: str) -> 'Block':
+    #     new_blk = cls()
+    #     new_blk.unserialize_json(json_str)
+    #     return new_blk
 
     @property
     def id(self) -> BlockID:
-        self.__id.digest(self.to_json().encode('utf-8'))
+        # self.__id.digest(self.to_json().encode('utf-8'))
         return self.__id
 
     # @classmethod
@@ -87,5 +105,21 @@ class Block(Serializable):
     #     for trx in json_obj[KEY_TRXS]:
     #         self.add_trx(Trans.from_obj(trx))
 
-    def add_trx(self, trx: TransID) -> None:
-            self.trxs.append(trx)
+    # def add_trx(self, trx: TransID) -> None:
+    #         self.trxs.append(trx)
+
+class GenesisBlock(Block):
+    def __init__(self) -> None:
+        self.prev_block_id = BlockID(ID(b''))
+        self.time_stamp = 123
+        self.trxs = []
+        self.__id = BlockID(ID(b'GenesisBlock'))
+
+    def validate(self) -> None:
+        pass
+
+    @property
+    def id(self) -> BlockID:
+        return self.__id
+
+GENESIS_BLOCK =  GenesisBlock()

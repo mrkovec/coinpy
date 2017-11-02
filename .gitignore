@@ -51,3 +51,4 @@ tests/.coverage
 *htmlcov/
 *.coverage
 *.json
+keys/

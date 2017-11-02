@@ -1,15 +1,15 @@
 import unittest
 import io
 
-from .test_setup import *
+from .setup import *
 
 # from coinpy.core.crypto import Hash, SerializableObject, SerializableObjectEncoder, Privkey, Pubkey
 from coinpy.core.crypto import (
     Privkey, Pubkey
 )
-from coinpy.core.errors import (
-    HashError, DataError
-)
+# from coinpy.core.errors import (
+#     HashError, DataError
+# )
 
 
 # class TestSerializableObjectEncoder(unittest.TestCase):
@@ -46,13 +46,13 @@ from coinpy.core.errors import (
 class TestPrivkey(unittest.TestCase):
     def test_from_pem_and_sign(self) -> None:
         sk = Privkey.from_pem(io.StringIO(PEM_FILE_DATA))
-        sgn = sk.sign(b'abc')
+        _, sgn = sk.sign(b'abc')
         self.assertTrue(sk.pubkey.verify(sgn, b'abc'))
 
 class TestPubkey(unittest.TestCase):
     def setUp(self) -> None:
         self.sk = Privkey.from_pem(io.StringIO(PEM_FILE_DATA))
-        self.sgn = self.sk.sign(b'abc')
+        _, self.sgn = self.sk.sign(b'abc')
 
     def test_from_str(self) -> None:
         vk = TEST_PUBKEY

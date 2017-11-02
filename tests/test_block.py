@@ -1,25 +1,32 @@
 import unittest
+import io
 
-from .test_setup import *
+from .setup import *
 
 from coinpy.core.output import Output
 from coinpy.core.trans import Trans
 from coinpy.core.block import (
-    Block, BlockID
+    Block, BlockID, GENESIS_BLOCK
 )
+from coinpy.core.crypto import Privkey, Serializable
 
 class TestBlockMethods(unittest.TestCase):
     def setUp(self) -> None:
-        trx = Trans(123)
-        trx.add_inp(Output(100, TEST_PUBADDR).id)
-        trx.add_outp(Output(10, TEST_PUBADDR))
-        trx.add_outp(Output(90, TEST_PUBADDR))
-        prev_blk = Block(123)
-        self.blk = Block(345, prev_blk)
-        self.blk.add_trx(trx.id)
+        self.trx = Trans(123, [Output(100, TEST_PUBADDR).id], [Output(10, TEST_PUBADDR), Output(90, TEST_PUBADDR)])
+        self.trx.sign(Privkey.from_pem(io.StringIO(PEM_FILE_DATA)))
+        # prev_blk = Block(123,[])
+        # print(bytes(GENESIS_BLOCK.id))
+        self.blk = Block(345, GENESIS_BLOCK, [self.trx.id])
+        # self.blk = Block(345, trxs = [self.trx.id])
+
+        # self.blk.add_trx(trx.id)
 
     def test_blk_from_json_obj(self) -> None:
-        blk_new = Block.from_json(self.blk.to_json())
+        pass
+        # print(str(self.blk))
+        blk_new = Block.unserialize_json(str(self.blk))
+        # print(str(blk_new))
+        self.assertIsInstance(blk_new, Serializable)
         self.assertIsInstance(blk_new, Block)
         self.assertIs(type(blk_new), Block)
         self.assertTrue(blk_new.id == self.blk.id)

@@ -1,25 +1,13 @@
 import logging
 
 from .crypto import (
-    str_to_bytes, bytes_to_str, Serializable, Hash, Pubkey, ID, Pubaddr
+    Serializable, Hash, Pubkey, ID, Pubaddr, Utils
 )
     # import coinpy.core.errors #import DataError
 from . import JsonDict, Any, Dict, NewType
+from .errors import ValidationError, DataError
 
-# OutputID = NewType('OutputID', bytes)
-logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
-# logger.setLevel(logging.DEBUG)
-# # create console handler and set level to debug
-# ch = logging.StreamHandler()
-# ch.setLevel(logging.DEBUG)
-# # create formatter
-# formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-# # add formatter to ch
-# ch.setFormatter(formatter)
-# # add ch to logger
-# logger.addHandler(ch)
-
 
 KEY_OUTPUT_AMOUNT = 'amount'
 KEY_OUTPUT_PUBADDR = 'pubaddr'
@@ -67,13 +55,19 @@ class Output(Serializable):
         # return {'amount': json_obj[KEY_OUTPUT_AMOUNT], 'pubaddr': Pubaddr(str_to_bytes(json_obj[KEY_OUTPUT_PUBADDR]))}
 
     def _unserialize(self, json_obj: JsonDict) -> None:
-        self.amount = json_obj[KEY_OUTPUT_AMOUNT]
-        self.pubaddr = Pubaddr(str_to_bytes(json_obj[KEY_OUTPUT_PUBADDR]))
+        try:
+            self.amount = json_obj[KEY_OUTPUT_AMOUNT]
+            self.pubaddr = Pubaddr(Utils.str_to_bytes(json_obj[KEY_OUTPUT_PUBADDR]))
+        except Exception as e:
+            raise DataError from e
         self.__id = OutputID(ID(OutputHash.digest(str(self).encode('utf-8'))))
 
-    def __bool__(self) -> bool:
-        return (self.amount is not None and self.pubaddr is not None)
+    # def __bool__(self) -> bool:
+    #     return (self.amount is not None and self.pubaddr is not None)
 
+    def validate(self) -> None:
+        if self.amount is None or self.pubaddr is None:
+            raise ValidationError
     # @classmethod
     # def from_obj(cls, json_obj: JsonDict) -> 'Output':
     #     outp_new = cls()
