@@ -94,7 +94,7 @@ class SerializableEncoder(json.JSONEncoder):
 
 class ID(Serializable):
     def __init__(self, id_bytes: bytes) -> None:
-        logger.debug(f'ID__init__({id_bytes})')
+        # logger.debug(f'ID__init__({id_bytes})')
         self.__val = id_bytes
 
     def __eq__(self, other: 'ID') -> bool: # type: ignore
@@ -105,6 +105,9 @@ class ID(Serializable):
 
     def __bytes__(self) -> bytes:
         return self.__val
+
+    def __hash__(self) -> int:
+        return self.__val.__hash__()
 
 
 SignatureHash = Hash(digest_size = 64, person = b'SignatureHash')
@@ -138,6 +141,10 @@ class Pubkey(object):
 class Privkey(object):
     def __init__(self, sk: SigningKey) -> None:
         self.__signing_key = sk
+
+    @classmethod
+    def new(cls) -> 'Privkey':
+        return cls(SigningKey.generate(curve=SECP256k1))
 
     @classmethod
     def from_pem(cls, pem_data: io.StringIO) -> 'Privkey':

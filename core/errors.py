@@ -15,3 +15,5 @@ class ConsensusError(Error):
 
 class BlockRulesError(ConsensusError):
     pass
+class TransRulesError(ConsensusError):
+    pass

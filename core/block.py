@@ -1,11 +1,12 @@
 import time
 import json
 import logging
-
-
-from . import (
-    List, JsonDict, NewType
+from typing import (
+    List, NewType, Optional
 )
+
+from . import JsonDict
+
 from .trans import (
     Trans, TransID
 )
@@ -42,7 +43,8 @@ class Block(Serializable):
         self.difficulty: int = prev_blk.difficulty
         self.time_stamp = time_stamp
         self.trxs = trxs
-        self.__id = BlockID(ID(BlockHash.digest(str(self).encode('utf-8'))))
+        # self.__id: Optional[BlockID] = None
+        # self.__id = BlockID(ID(BlockHash.digest(str(self).encode('utf-8'))))
 
     def _serialize(self) -> JsonDict:
         return {
@@ -68,7 +70,7 @@ class Block(Serializable):
                 self.trxs.append(TransID(ID(Utils.str_to_bytes(trx))))
         except Exception as e:
             raise DataError(str(e)) from e
-        self.__id = BlockID(ID(BlockHash.digest(str(self).encode('utf-8'))))
+        # self.__id = BlockID(ID(BlockHash.digest(str(self).encode('utf-8'))))
 
 
     def validate(self) -> None:
@@ -78,7 +80,8 @@ class Block(Serializable):
 
     @property
     def id(self) -> BlockID:
-        return self.__id
+        return BlockID(ID(BlockHash.digest(str(self).encode('utf-8'))))
+        # return self.__id
 
 class GenesisBlock(Block):
     def __init__(self, difficulty: int, nonce: int, time: float) -> None:
@@ -89,13 +92,14 @@ class GenesisBlock(Block):
         self.height = 0
         self.difficulty = difficulty
         self.trxs = []
-        self.__id = BlockID(ID(BlockHash.digest(str(self).encode('utf-8'))))
+        # self.__id = BlockID(ID(BlockHash.digest(str(self).encode('utf-8'))))
 
     def validate(self) -> None:
         pass
 
     @property
     def id(self) -> BlockID:
-        return self.__id
+        # return self.__id
+        return BlockID(ID(BlockHash.digest(str(self).encode('utf-8'))))
 
 GENESIS_BLOCK =  GenesisBlock(2, 26753, 1509634869.5323677)
