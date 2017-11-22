@@ -1,14 +1,14 @@
-# import unittest
-#
-# from .__setpaths__ import *
-# from coinpy.wallet import Wallet
+import unittest
 
-# class TestWalletMethods(unittest.TestCase):
-#     def setUp(self):
-#         self.wal = Wallet()
-#
-#     def test_new_privkey(self):
-#         print(self.wal.new_privkey())
+from coinpy.wallet import Wallet
 
-# if __name__ == '__main__':
-#     unittest.main()
+class TestWalletMethods(unittest.TestCase):
+    def setUp(self) -> None:
+        self.wal = Wallet()
+
+    def test_new_privkey(self) -> None:
+        pass
+        # self.wal.run_command()
+
+if __name__ == '__main__':
+    unittest.main()

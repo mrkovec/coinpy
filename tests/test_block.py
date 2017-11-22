@@ -5,7 +5,7 @@ from time import time
 from .setup import *
 
 from coinpy.core.output import Output
-from coinpy.core.trans import Trans
+from coinpy.core.transaction import Transaction
 from coinpy.core.block import (
     Block, BlockID, GENESIS_BLOCK, GenesisBlock
 )
@@ -15,7 +15,7 @@ from coinpy.node.consensus import Rules
 
 class TestBlockMethods(unittest.TestCase):
     def setUp(self) -> None:
-        self.trx = Trans(123, [Output(100, TEST_PUBADDR).id], [Output(10, TEST_PUBADDR), Output(90, TEST_PUBADDR)])
+        self.trx = Transaction(123, [Output(100, TEST_PUBADDR).id], [Output(10, TEST_PUBADDR), Output(90, TEST_PUBADDR)])
         self.trx.sign(Privkey.from_pem(io.StringIO(PEM_FILE_DATA)))
         self.blk = Block(345, GENESIS_BLOCK, [self.trx.id])
 

@@ -2,6 +2,7 @@ import hashlib
 import base64
 import json
 import io
+import os
 import logging
 
 from ecdsa import (
@@ -13,7 +14,7 @@ from .errors import (
 from . import (
     JsonDict, Tuple, Dict, TypeVar, Any, Type, Union, Optional
 )
-
+from coinpy.definitions import KEYS_PATH
 # logging.basicConfig(level=logging.ERROR)
 logger = logging.getLogger(__name__)
 
@@ -124,6 +125,10 @@ class Pubkey(object):
     def __init__(self, vk_bytes: bytes) -> None:
         self.__verifying_key = VerifyingKey.from_string(vk_bytes, curve=SECP256k1)
 
+    # @classmethod
+    # def from_str(cls, vk_str: str) -> 'Pubkey':
+    #     return cls(Utils.str_to_bytes(vk_str))
+
     def __str__(self) -> str:
         return Utils.bytes_to_str(self.__verifying_key.to_string())
 
@@ -147,9 +152,11 @@ class Privkey(object):
         return cls(SigningKey.generate(curve=SECP256k1))
 
     @classmethod
-    def from_pem(cls, pem_data: io.StringIO) -> 'Privkey':
+    def from_pem(cls, pem_data: io.BufferedIOBase) -> 'Privkey':
         return cls(SigningKey.from_pem(pem_data.read()))
 
+    def to_pem(self) -> str:
+        return self.__signing_key.to_pem()
 
     def sign(self, message: bytes) -> Tuple[Pubkey, bytes]:
         return (self.pubkey, self.__signing_key.sign(SignatureHash.digest(message)))
@@ -157,3 +164,31 @@ class Privkey(object):
     @property
     def pubkey(self) -> Pubkey:
         return Pubkey(self.__signing_key.get_verifying_key().to_string())
+
+
+class PrivkeyStorage(object):
+    @staticmethod
+    def load_signing_keys() -> Dict[str, Privkey]:
+        if not os.path.exists(KEYS_PATH):
+            os.makedirs(KEYS_PATH)
+        signing_keys = {}
+        for root, _, files in os.walk(KEYS_PATH):
+            for fn in files:
+                if fn.endswith('.pem'):
+                    with open(os.path.join(root, fn), 'rb') as f:
+                        sk = Privkey.from_pem(f)
+                        signing_keys[fn[:-4]] = sk
+        if len(signing_keys) == 0:
+            # default privkey
+            sk = Privkey.new()
+            signing_keys['default'] = sk
+            PrivkeyStorage.new_signing_key('default', sk)
+        return signing_keys
+
+    @staticmethod
+    def store_signing_key(name: str, privkey: Privkey) -> None:
+        f_n = os.path.join(KEYS_PATH, f'{name}.pem')
+        if os.path.isfile(f_n):
+            raise Error(f'privkey {name} already exisis')
+        with open(f_n, 'wb') as f:
+            f.write(privkey.to_pem())

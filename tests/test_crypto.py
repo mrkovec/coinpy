@@ -1,7 +1,8 @@
 import unittest
 import io
 
-from .setup import *
+# from .setup import *
+from .setup import PEM_FILE_DATA, TEST_PUBKEY
 
 from coinpy.core.crypto import (
     Serializable, Privkey, Pubkey, Utils, ID

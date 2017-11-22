@@ -52,3 +52,4 @@ tests/.coverage
 *.coverage
 *.json
 keys/
+*.pem
