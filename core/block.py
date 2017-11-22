@@ -42,7 +42,7 @@ class Block(Serializable):
         self.height: int = prev_blk.height + 1
         self.difficulty: int = prev_blk.difficulty
         self.time_stamp = time_stamp
-        self.trxs = trxs
+        self.transactions = trxs
         # self.__id: Optional[BlockID] = None
         # self.__id = BlockID(ID(BlockHash.digest(str(self).encode('utf-8'))))
 
@@ -54,7 +54,7 @@ class Block(Serializable):
             KEY_BLOCK_PREV_BLOCK: self.prev_block_id,
             KEY_BLOCK_HEIGHT: self.height,
             KEY_BLOCK_DIFFICULTY: self.difficulty,
-            KEY_BLOCK_TRXS: self.trxs
+            KEY_BLOCK_TRXS: self.transactions
         }
 
     def _unserialize(self, json_obj: JsonDict) -> None:
@@ -65,17 +65,17 @@ class Block(Serializable):
             self.prev_block_id = BlockID(ID(Utils.str_to_bytes(json_obj[KEY_BLOCK_PREV_BLOCK])))
             self.height = json_obj[KEY_BLOCK_HEIGHT]
             self.difficulty = json_obj[KEY_BLOCK_DIFFICULTY]
-            self.trxs = []
+            self.transactions = []
             for trx in json_obj[KEY_BLOCK_TRXS]:
-                self.trxs.append(TransactionID(ID(Utils.str_to_bytes(trx))))
+                self.transactions.append(TransactionID(ID(Utils.str_to_bytes(trx))))
         except Exception as e:
             raise DataError(str(e)) from e
         # self.__id = BlockID(ID(BlockHash.digest(str(self).encode('utf-8'))))
 
 
     def validate(self) -> None:
-        if (self.time_stamp is None or self.prev_block_id is None or self.trxs is None
-                or len(self.trxs) == 0):
+        if (self.time_stamp is None or self.prev_block_id is None or self.transactions is None
+                or len(self.transactions) == 0):
             raise ValidationError
 
     @property
@@ -91,7 +91,7 @@ class GenesisBlock(Block):
         self.time_stamp = time
         self.height = 0
         self.difficulty = difficulty
-        self.trxs = []
+        self.transactions = []
         # self.__id = BlockID(ID(BlockHash.digest(str(self).encode('utf-8'))))
 
     def validate(self) -> None:
