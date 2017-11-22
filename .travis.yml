@@ -6,6 +6,7 @@ install:
   - pip install coverage
   - pip install ecdsa
 script:
-  - python -m coverage run --omit */lib/* -m unittest discover 
-after_success:
+ - ls 
+ - python -m coverage run --omit */lib/* -m unittest discover 
+ after_success:
   - coveralls
