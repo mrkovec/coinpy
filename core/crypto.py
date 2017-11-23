@@ -182,7 +182,7 @@ class PrivkeyStorage(object):
             # default privkey
             sk = Privkey.new()
             signing_keys['default'] = sk
-            PrivkeyStorage.new_signing_key('default', sk)
+            PrivkeyStorage.store_signing_key('default', sk)
         return signing_keys
 
     @staticmethod

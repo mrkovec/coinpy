@@ -1,11 +1,11 @@
 language: python
 python:
   - 3.7-dev
-  - nightly
 install:
   - pip install python-coveralls
   - pip install coverage
   - pip install ecdsa
+  - pip install mypy_extensions
 script:
   - python -m coverage run --omit */lib/* -m unittest discover 
 after_success:
