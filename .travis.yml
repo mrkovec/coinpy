@@ -1,11 +1,11 @@
 language: python
 python:
-  - 3.6.3
+  - 3.7.0
 install:
   - pip install python-coveralls
   - pip install coverage
   - pip install ecdsa
 script:
- - python -m coverage run --omit */lib/* -m unittest discover 
+  - python -m coverage run --omit */lib/* -m unittest discover 
  after_success:
   - coveralls
