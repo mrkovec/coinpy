@@ -43,8 +43,6 @@ class Block(Serializable):
         self.difficulty: int = prev_blk.difficulty
         self.time_stamp = time_stamp
         self.transactions = trxs
-        # self.__id: Optional[BlockID] = None
-        # self.__id = BlockID(ID(BlockHash.digest(str(self).encode('utf-8'))))
 
     def _serialize(self) -> JsonDict:
         return {

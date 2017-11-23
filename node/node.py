@@ -1,4 +1,4 @@
-from typing import List, Iterator, Dict, Optional
+from typing import List, Iterator, Dict, Optional, Any
 import logging
 import socket
 import sys
@@ -29,15 +29,16 @@ class Node(object):
         self.__unprocess_trxs: Dict[TransactionID, Transaction] = {}
         self.__unspent_outs: Dict[OutputID, Output] = {}
 
-        self.__mined_block = multiprocessing.Queue(1)
+        self.__mined_block = multiprocessing.Queue(1) # type: ignore
 
+    def __command_new_trx(self, **kwargs: Any) -> None:
+        pass
 
-
-    def validate_block(self, blk: Block) ->None:
+    def validate_block(self, blk: Block) -> None:
         # consensus
         Rules.block_valid(self.__ledger[-1], blk)
         # valid blocks transactions and inputs
-        for trx_id in blk.trxs:
+        for trx_id in blk.transactions:
             trx = blk.trxs_data[trx_id]
 
             if type(trx) is CoinbaseTransaction:
@@ -50,7 +51,7 @@ class Node(object):
                     raise TransactionRulesError('spent output as input')
 
     def process_block(self, blk: Block) ->None:
-        for trx_id in blk.trxs:
+        for trx_id in blk.transactions:
             for unspout in blk.trxs_data[trx_id].outputs:
                 # add trx outputs into unspent outputs
                 self.__unspent_outs[unspout.id] = unspout
@@ -77,7 +78,7 @@ class Node(object):
         coinbase.sign(sk['default'])
 
         blk_trxs_data = {}
-        for _, trx in trxs_new:
+        for trx in trxs_new.values():
             trx_inputs_data = {inp_id: self.__unspent_outs[inp_id] for inp_id in trx.inputs}
             # append inputs (for validation purposes)
             trx.inputs_data = trx_inputs_data

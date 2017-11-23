@@ -1,22 +1,29 @@
 import unittest
 import time
 
-from coinpy.node.peer import Peer, PeerAddr
+from typing import Dict, Any
+
+
+from coinpy.node.peer import Peer, PeerAddr, Command
 from coinpy.node.node import Scheduler
 
-# class TestPeer(unittest.TestCase):
-#     def test_peer(self) -> None:
-#         p1 = Peer(PeerAddr(('127.0.0.1', 50001)))
-#         p2 = Peer(PeerAddr(('127.0.0.1', 50002)))
-        # p3 = Peer(PeerAddr(('127.0.0.1', 50003)))
-        # p1.add_neighbor(p2.addr)
-        # p1.add_neighbor(p3.addr)
-        # p1.send_msg({'text':'hooo'})
-        # time.sleep(1)
-        # g = p1.test_gen()
-
-        # m = Scheduler([p2.process_msg()])
-        # m.add_microthread(p2.test_gen())
+class TestPeer(unittest.TestCase):
+    def test_peer(self) -> None:
+        p1 = Peer(PeerAddr(('127.0.0.1', 50001)),
+            {'direct': command_new_trx}
+        )
+        p2 = Peer(PeerAddr(('127.0.0.1', 50002)))
+        p1.add_neighbor(p2.addr)
+        p1.direct_commnad(Command('direct', {'a':'1', 'b':2}))
+        m = Scheduler([p2.process_msg(), p1.process_msg()])
+        g = m.run()
+        next(g)
+        next(g)
+        # next(g)
+        # next(g)
         # for i in m.run():
-        #     print(i)
         #     time.sleep(1)
+
+
+def command_new_trx(**kwargs: Any) -> None:
+    print(kwargs)

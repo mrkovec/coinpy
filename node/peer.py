@@ -4,63 +4,85 @@ import threading
 import queue
 import logging
 import json
-from typing import Iterator, List, Tuple, NewType
+from typing import Iterator, List, Tuple, NewType, Dict, Callable, Any
+from mypy_extensions import KwArg
 
 # from coinpy.core import (
 #     JsonDict, List, Tuple, NewType
 # )
+from coinpy.core import JsonDict
+#
+# from coinpy.core.transaction import Transaction
+# from coinpy.core.block import Block
+#
+from coinpy.core.crypto import (
+    Serializable
+)
 from coinpy.core.errors import (
     ValidationError
 )
+from .commands import (
+    Command, GreetCommand
+)
+
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
+
 PEER_VERSION = 1
+
 
 PeerAddr = NewType('PeerAddr', Tuple[str, int])
 
-class Msg(object):
-    def __init__(self, msg: object, from_addr: PeerAddr, peer_ver: int = PEER_VERSION) -> None:
+
+class Message(Serializable):
+    def __init__(self, comm: Command, from_addr: PeerAddr, peer_ver: int = PEER_VERSION) -> None:
         self.ver = peer_ver
-        self.msg = msg
+        self.command = comm
         self.from_addr = from_addr
+    def _serialize(self) -> JsonDict:
+        return {
+            'ver': self.ver,
+            'command': self.command,
+            'from_addr': self.from_addr,
+        }
+    def validate(self) -> None:
+        if self.ver is None or self.command is None or self.from_addr is None:
+            raise ValidationError
+    def _unserialize(self, comm_obj: JsonDict) -> None:
+        self.ver = comm_obj['ver']
+        self.command = Command.unserialize(comm_obj['command'])
+        self.from_addr = comm_obj['from_addr']
 
-    @property
-    def raw(self) -> bytes:
-        return json.dumps({'ver': self.ver, 'from': self.from_addr, 'msg': self.msg}).encode('utf-8')
 
-    @classmethod
-    def from_raw(cls, msg_bytes: bytes) -> 'Msg':
-        dt = json.loads(msg_bytes)
-        return cls(dt['msg'], dt['from'], dt['ver'])
-
-
-class MsgIn(object):
+class InMessageWrap(object):
     def __init__(self, msg_raw: bytes, neighbor_addr: PeerAddr) -> None:
-        self.__msg_raw = msg_raw
+        self.__msg_json = msg_raw.decode('utf-8')
         self.__neighbor_addr = neighbor_addr
 
     @property
-    def obj(self) -> object:
-        m = Msg.from_raw(self.__msg_raw)
+    def msg(self) -> Message:
+        m = Message.unserialize_json(self.__msg_json)
         if m.ver != PEER_VERSION:
             raise ValidationError('incorrect msg version')
-        if m.from_addr != self.__neighbor_addr:
+        if m.from_addr[0] != self.__neighbor_addr[0]:
             raise ValidationError('incorrect msg adrress')
-        return m.msg
+        return m
 
 
 class Peer(object):
-    def __init__(self, addr: PeerAddr) -> None:
+    def __init__(self, addr: PeerAddr, comms: Dict[str, Callable[[KwArg(Any)], None]] = {}) -> None:
         self.addr = addr
         self.__msg_queue = queue.Queue() # type: ignore
         self.__neighbors_addr: List[PeerAddr] = []
+        self.__registered_commands = {**comms}
         self.listen()
 
     def add_neighbor(self, n: PeerAddr) -> None:
         if n not in self.__neighbors_addr:
             self.__neighbors_addr.append(n)
+            self.send_command(n, GreetCommand())
 
     def __lstn(self) -> None:
         while True:
@@ -69,42 +91,51 @@ class Peer(object):
                 s.listen(5)
                 conn, addr = s.accept()
                 with conn:
-                    msg = b''
+                    msg_raw = b''
                     while True:
                         data = conn.recv(1024)
                         if not data:
                             break
-                        msg += data
-                    logger.debug(f'{self.addr} new msg {msg}')
-                    self.__msg_queue.put(MsgIn(msg, addr))
+                        msg_raw += data
+                    logger.debug(f'{self.addr} new msg {msg_raw}')
+                    self.__msg_queue.put(InMessageWrap(msg_raw, addr))
 
     def listen(self) -> None:
         p =threading.Thread(target=self.__lstn, daemon=True)
-        # p = multiprocessing.Process(target=self.lstn)
         p.start()
 
+    def send_command(self, addr: PeerAddr, comm: Command) -> None:
+        self.send_msg(addr, Message(comm, self.addr))
 
-    def send_msg(self, msg: object) -> None:
-        m = Msg(msg, self.addr)
+    def send_msg(self, addr: PeerAddr, msg: Message) -> None:
+        with socket.socket(socket.SOCK_DGRAM) as s:
+            s.connect(addr)
+            logger.debug(f'{self.addr} semding {msg}')
+            s.sendall(str(msg).encode('utf-8'))
+
+    def send_bulk_commnad(self, comm: Command) -> None:
+        m = Message(comm, self.addr)
         for addr in self.__neighbors_addr:
-            with socket.socket(socket.SOCK_DGRAM) as s:
-                s.connect(addr)
-                logger.debug(f'{self.addr} semding {m}')
-                s.sendall(m.raw)
+            self.send_msg(addr, m)
+
+    def direct_commnad(self, comm: Command) -> None:
+        msg = Message(comm, self.addr)
+        self.__msg_queue.put(InMessageWrap(str(msg).encode('utf-8'), self.addr))
 
     def process_msg(self) -> Iterator[int]:
         while True:
             try:
-                self.__prcmsg(self.__msg_queue.get_nowait())
-                # logger.debug(f'working {msg}')
+                m = self.__msg_queue.get_nowait()
+                # logger.debug(f'working {m.msg}')
+                self.__registered_commands[m.msg.command.name](**m.msg.command.kwargs)
             except queue.Empty:
                 pass
             except Exception as e:
                 logger.exception(str(e))
             yield 1
 
-    def __prcmsg(self, msg: MsgIn) -> None:
-        msg_obj = msg.obj
+    # def __prcmsg(self, msg: MessageIn) -> None:
+    #     msg_obj = msg.obj
 
 
 
