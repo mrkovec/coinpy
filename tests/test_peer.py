@@ -1,29 +1,65 @@
 import unittest
 import time
-
+import threading
+import logging
+import asyncio
 from typing import Dict, Any
 
+from io import StringIO
+from unittest.mock import patch
 
-from coinpy.node.peer import Peer, PeerAddr, Command
-from coinpy.node.node import Scheduler
+# from coinpy.node.peer import Peer, PeerAddr
+
+# from coinpy.node.commands import Command
+
+# from coinpy.node.node import Scheduler
+
+from coinpy.node.commands import Command
+from coinpy.node.peer import (
+    Peer, PeerAddr
+)
+
+logging.basicConfig(level=logging.DEBUG)
 
 class TestPeer(unittest.TestCase):
-    def test_peer(self) -> None:
-        p1 = Peer(PeerAddr(('127.0.0.1', 50001)),
-            {'direct': command_new_trx}
-        )
-        p2 = Peer(PeerAddr(('127.0.0.1', 50002)))
-        p1.add_neighbor(p2.addr)
-        p1.direct_commnad(Command('direct', {'a':'1', 'b':2}))
-        m = Scheduler([p2.process_msg(), p1.process_msg()])
-        g = m.run()
-        next(g)
-        next(g)
-        # next(g)
-        # next(g)
-        # for i in m.run():
-        #     time.sleep(1)
+    def setUp(self) -> None:
+
+        self.p1_loop = asyncio.new_event_loop()
+        self.p2_loop = asyncio.new_event_loop()
+        # self.p1_loop.set_debug(True)
+        # self.p2_loop.set_debug(True)
+        self.p1 = Peer(PeerAddr(('127.0.0.1', 50001)), self.p1_loop)
+        self.p2 = Peer(PeerAddr(('127.0.0.1', 50002)), self.p2_loop)
+        self.p1.add_neighbors([self.p2.addr])
+        self.p2.add_neighbors([self.p1.addr])
+
+    def tearDown(self) -> None:
+        self.p1.stop()
+        self.p2.stop()
+        self.p1_loop.stop()
+        self.p2_loop.stop()
+
+    def test_peer_pingpong_msg(self) -> None:
+        self.p1.register_commnads([(self.p1, PongCommand)])
+        self.p2.register_commnads([(self.p2, PingCommand)])
+        self.p1.send_bulk_commnad(PingCommand())
+        threading.Thread(target=lambda: self.p1_loop.run_forever(), daemon=True).start()
+        threading.Thread(target=lambda: self.p2_loop.run_forever(), daemon=True).start()
+        with patch('sys.stdout', new=StringIO()) as fo:
+            time.sleep(0.1)
+            self.assertEqual(fo.getvalue().strip(), "ping from ['127.0.0.1', 50001]\npong from ['127.0.0.1', 50002]")
 
 
-def command_new_trx(**kwargs: Any) -> None:
-    print(kwargs)
+
+class PingCommand(Command):
+    name = 'ping'
+    @staticmethod
+    def handler(ctx: Any, **kwargs:Any) -> None:
+        print(f'{PingCommand.name} from {kwargs["source_msg"].from_addr}')
+        ctx.send_bulk_commnad(PongCommand())
+
+class PongCommand(Command):
+    name = 'pong'
+    @staticmethod
+    def handler(ctx: Any, **kwargs:Any) -> None:
+        print(f'{PongCommand.name} from {kwargs["source_msg"].from_addr}')

@@ -48,13 +48,13 @@ T = TypeVar('T', bound='Serializable')
 
 class Serializable(object):
     def _serialize(self) -> JsonDict:
-        raise NotImplementedError('_serialize')
+        raise NotImplementedError('Serializable._serialize')
 
     def _unserialize(self, json_obj: JsonDict) -> None:
-        raise NotImplementedError('_unserialize')
+        raise NotImplementedError('Serializable._unserialize')
 
     def validate(self) -> None:
-        raise NotImplementedError('validate')
+        raise NotImplementedError('Serializable.validate')
 
     def serialize(self) -> JsonDict:
         self.validate()

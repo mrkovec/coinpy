@@ -27,22 +27,22 @@ class TestBlockMethods(unittest.TestCase):
         self.assertTrue(blk_new.id == self.blk.id)
 
 
-# class TestMineGenesisBlock(unittest.TestCase):
-#     def test_mine_genesis_block(self) -> None:
-#         n = 0
-#         t = time()
-#         dif = 2
-#         while 1:
-#             blk = GenesisBlock(dif, n, t)
-#             try:
-#                 Rules.verify_block_data(blk)
-#                 print('mined', bytes(blk.id))
-#                 print(str(blk))
-#                 print(time()-t)
-#                 break
-#             except:
-#                 pass
-#             n += 1
+class TestMineGenesisBlock(unittest.TestCase):
+    def test_mine_genesis_block(self) -> None:
+        n = 0
+        t = time()
+        dif = 1
+        while 1:
+            blk = GenesisBlock(dif, n, t)
+            try:
+                Rules.block_valid_difficulty(blk)
+                print('mined', bytes(blk.id))
+                print(str(blk))
+                print(time()-t)
+                break
+            except:
+                pass
+            n += 1
 
 
 if __name__ == '__main__':

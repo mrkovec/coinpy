@@ -1,44 +1,32 @@
-# import multiprocessing
-import socket
-import threading
-import queue
 import logging
 import json
-from typing import Iterator, List, Tuple, NewType, Dict, Callable, Any
-from mypy_extensions import KwArg
+from typing import Iterator, List, Tuple, NewType, Dict, Callable, Any, Type, Iterable
+from mypy_extensions import KwArg, Arg
+import asyncio
 
-# from coinpy.core import (
-#     JsonDict, List, Tuple, NewType
-# )
 from coinpy.core import JsonDict
-#
-# from coinpy.core.transaction import Transaction
-# from coinpy.core.block import Block
-#
-from coinpy.core.crypto import (
-    Serializable
+from coinpy.core.crypto import Serializable
+
+# import coinpy.node.node as node
+# import coinpy.node.commands as commands
+from .commands import (
+        Command, CommandHandler
 )
+    # import coinpy.node.node as node
 from coinpy.core.errors import (
     ValidationError
 )
-from .commands import (
-    Command, GreetCommand
-)
 
+VERSION = 1
 
-logging.basicConfig(level=logging.DEBUG)
+# logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-
-PEER_VERSION = 1
-
-
 PeerAddr = NewType('PeerAddr', Tuple[str, int])
-
-
+# PeerAddr = Tuple[str, int]
 class Message(Serializable):
-    def __init__(self, comm: Command, from_addr: PeerAddr, peer_ver: int = PEER_VERSION) -> None:
-        self.ver = peer_ver
+    def __init__(self, comm: Command, from_addr: PeerAddr) -> None:
+        self.ver = VERSION
         self.command = comm
         self.from_addr = from_addr
     def _serialize(self) -> JsonDict:
@@ -54,129 +42,140 @@ class Message(Serializable):
         self.ver = comm_obj['ver']
         self.command = Command.unserialize(comm_obj['command'])
         self.from_addr = comm_obj['from_addr']
+    @property
+    def raw(self) -> bytes:
+        return str(self).encode('utf-8')
 
 
-class InMessageWrap(object):
+class RawMessage(object):
     def __init__(self, msg_raw: bytes, neighbor_addr: PeerAddr) -> None:
         self.__msg_json = msg_raw.decode('utf-8')
         self.__neighbor_addr = neighbor_addr
-
     @property
-    def msg(self) -> Message:
+    def message(self) -> Message:
         m = Message.unserialize_json(self.__msg_json)
-        if m.ver != PEER_VERSION:
+        if m.ver != VERSION:
             raise ValidationError('incorrect msg version')
         if m.from_addr[0] != self.__neighbor_addr[0]:
             raise ValidationError('incorrect msg adrress')
         return m
 
+class PeerListener(asyncio.DatagramProtocol):
+    def __init__(self, msg_queue: asyncio.Queue, loop: asyncio.AbstractEventLoop) -> None: # type: ignore
+        self.__loop = loop
+        self.__msg_queue = msg_queue
+    def connection_made(self, transport: asyncio.DatagramTransport) -> None: # type: ignore
+        self.transport = transport
+    def datagram_received(self, msg_raw:bytes, addr: PeerAddr) -> None: # type: ignore
+        message = msg_raw.decode()
+        asyncio.ensure_future(self.__msg_queue.put(RawMessage(msg_raw, addr)), loop=self.__loop)
+        logger.debug(f'receiving {message} from {addr}')
+    def error_received(self, exc: OSError) -> None: # type: ignore
+        logger.error(str(exc))
+
+
+class PeerSender(asyncio.DatagramProtocol):
+    def __init__(self, msg: Message) -> None:
+        self.message = msg
+    def connection_made(self, transport: asyncio.DatagramTransport) -> None: # type: ignore
+        transport.sendto(self.message.raw)
+    def error_received(self, exc: OSError) -> None: # type: ignore
+        logger.error(str(exc))
 
 class Peer(object):
-    def __init__(self, addr: PeerAddr, comms: Dict[str, Callable[[KwArg(Any)], None]] = {}) -> None:
+    def __init__(self, addr: PeerAddr, loop: asyncio.AbstractEventLoop) -> None:
+        logger.info(f'starting peer {addr}')
         self.addr = addr
-        self.__msg_queue = queue.Queue() # type: ignore
         self.__neighbors_addr: List[PeerAddr] = []
-        self.__registered_commands = {**comms}
-        self.listen()
+        self.__registered_commands: Dict[str, Tuple[Any, CommandHandler]] = {}
 
-    def add_neighbor(self, n: PeerAddr) -> None:
-        if n not in self.__neighbors_addr:
-            self.__neighbors_addr.append(n)
-            self.send_command(n, GreetCommand())
+        self.io_loop = loop
+        self.__msg_queue: asyncio.Queue = asyncio.Queue(loop=self.io_loop) # type: ignore
 
-    def __lstn(self) -> None:
-        while True:
-            with socket.socket(socket.SOCK_DGRAM) as s:
-                s.bind(self.addr)
-                s.listen(5)
-                conn, addr = s.accept()
-                with conn:
-                    msg_raw = b''
-                    while True:
-                        data = conn.recv(1024)
-                        if not data:
-                            break
-                        msg_raw += data
-                    logger.debug(f'{self.addr} new msg {msg_raw}')
-                    self.__msg_queue.put(InMessageWrap(msg_raw, addr))
+        logger.debug('initializing listener')
+        listener = self.io_loop.create_datagram_endpoint(lambda: PeerListener(self.__msg_queue, self.io_loop), local_addr=self.addr)
+        self.transport, _ = self.io_loop.run_until_complete(listener)
+        # asyncio.ensure_future(self.process_msg(), loop=self.io_loop)
+        self.procmsg_task = self.io_loop.create_task(self.process_msg())
 
-    def listen(self) -> None:
-        p =threading.Thread(target=self.__lstn, daemon=True)
-        p.start()
+    def stop(self) -> None:
+        logger.info(f'stopping peer {self.addr}')
+        # pending = asyncio.Task.all_tasks(loop=self.io_loop)
+        # for task in pending:
+        #     logging.debug("canceling %s: %s", task, task.cancelled())
+        #     task.cancel()
+        # try:
+        #     self.io_loop.run_until_complete(asyncio.gather(*pending))
+        # except asyncio.CancelledError: # Any other exception would be bad
+        # # except:
+        #     for task in pending:
+        #         logging.debug("Cancelled %s: %s", task, task.cancelled())
+        # self.__msg_queue.close()
 
-    def send_command(self, addr: PeerAddr, comm: Command) -> None:
-        self.send_msg(addr, Message(comm, self.addr))
+        # cancel msg proccessing
+        # self.procmsg_task.cancel()
+        # self.io_loop.run_until_complete(self.procmsg_task)
+
+        self.transport.close()
 
     def send_msg(self, addr: PeerAddr, msg: Message) -> None:
-        with socket.socket(socket.SOCK_DGRAM) as s:
-            s.connect(addr)
-            logger.debug(f'{self.addr} semding {msg}')
-            s.sendall(str(msg).encode('utf-8'))
+        logger.debug(f'sending msg {msg} to {addr}')
+        self.io_loop.create_task(self.io_loop.create_datagram_endpoint(lambda: PeerSender(msg), remote_addr=addr))
+
+    # def start(self, run = False) -> None:
+    #     listener = self.io_loop.create_datagram_endpoint(lambda: PeerListener(self.__msg_queue, self.io_loop), local_addr=self.addr)
+    #     transport, _ = self.io_loop.run_until_complete(listener)
+    #     self.io_loop.create_task(self.process_msg())
+    #     # self.send_bulk_commnad(GreetCommand())
+    #     if run:
+    #         try:
+    #             self.io_loop.run_until_complete(self.process_msg())
+    #         except KeyboardInterrupt:
+    #             pass
+    #         self.stop()
+    #     # transport.close()
+    #     # self.io_loop.close()
+
+
+    def add_neighbors(self, ns: List[PeerAddr]) -> None:
+        for n in ns:
+            if n not in self.__neighbors_addr:
+                logger.debug(f'adding peer neighbor {n}')
+                self.__neighbors_addr.append(n)
+
+    def register_commnads(self, comms: List[Tuple[Any, Type[Command]]]) -> None:
+        for ctx_comm in comms:
+            ctx, comm = ctx_comm
+            logger.debug(f'registering "{comm.name}" commnad handler {comm.handler}')
+            self.__registered_commands[comm.name] = (ctx, comm.handler) # type: ignore
+
+    def send_command(self, addr: PeerAddr, comm: Command) -> None:
+        logger.debug(f'sending commnad {comm}{type(comm)} to {addr}')
+        self.send_msg(addr, Message(comm, self.addr))
 
     def send_bulk_commnad(self, comm: Command) -> None:
+        logger.debug(f'sending {type(comm)} commnad {comm} to {self.__neighbors_addr}')
         m = Message(comm, self.addr)
         for addr in self.__neighbors_addr:
             self.send_msg(addr, m)
 
     def direct_commnad(self, comm: Command) -> None:
         msg = Message(comm, self.addr)
-        self.__msg_queue.put(InMessageWrap(str(msg).encode('utf-8'), self.addr))
+        self.__msg_queue.put(RawMessage(msg.raw, self.addr))
 
-    def process_msg(self) -> Iterator[int]:
+    async def process_msg(self) -> None:
+        logger.debug('waiting for messages')
         while True:
             try:
-                m = self.__msg_queue.get_nowait()
-                # logger.debug(f'working {m.msg}')
-                self.__registered_commands[m.msg.command.name](**m.msg.command.kwargs)
-            except queue.Empty:
-                pass
+                msg_raw = await self.__msg_queue.get()
+                msg = msg_raw.message
+                logger.debug(f'executing "{msg.command}"{self.__registered_commands[msg.command.name]}')
+                ctx, comm = self.__registered_commands[msg.command.name]
+                comm(ctx, **{**msg.command.params, 'source_msg': msg})
+                # self.__registered_commands[msg.command.name](self, **{**msg.command.params, 'source_msg': msg})
+                self.__msg_queue.task_done()
+            except asyncio.CancelledError:
+                logger.debug("fiiiiiiiiiiii")
+                return
             except Exception as e:
                 logger.exception(str(e))
-            yield 1
-
-    # def __prcmsg(self, msg: MessageIn) -> None:
-    #     msg_obj = msg.obj
-
-
-
-
-
-
-# class Sender(object):
-#     def __init__(self, data: bytes) -> None:
-#         with socket.socket(socket.SOCK_DGRAM) as s:
-#             logger.debug(f'send {data}')
-#             s.connect(('127.0.0.1', 50007))
-#             s.sendall(data)
-#             # data = s.recv(1024)
-#             # logger.debug(f'echo {data}')
-#             # s.shutdown(socket.SHUT_RDWR)
-#             # s.close()
-#
-# class Listener(object):
-#     def __init__(self) -> None:
-#         self.msg = b''
-#         t = threading.Thread(target=self.run, daemon=True)
-#         t.start()
-#
-#     def run(self) -> None:
-#         while True:
-#             with socket.socket( socket.SOCK_DGRAM) as s:
-#                 # logger.debug(socket.gethostname())
-#                 s.bind(('127.0.0.1', 50007))
-#                 s.listen(5)
-#                 conn, addr = s.accept()
-#                 with conn:
-#                     # logger.debug(f'Connected by {addr[0]}')
-#                     self.msg = b''
-#                     while True:
-#                         data = conn.recv(2)
-#                         if not data:
-#                             break
-#                         logger.debug(f'data {data}')
-#                         self.msg += data
-#                     logger.debug(f'rieceved {self.msg}')
-#                     # conn.sendall(self.msg)
-#
-#                 # s.shutdown(socket.SHUT_RDWR)
-#                 # s.close()

@@ -30,7 +30,7 @@ class Rules(object):
     @staticmethod
     def block_valid_transactions(blk: Block) -> None:
         for trx in blk.trxs_data.values():
-            Rules.transaction_valid_header(blk, trx)
+            Rules.transaction_valid_header(trx)
 
     @staticmethod
     def block_valid(prev: Block, new: Block) -> None:
@@ -38,12 +38,13 @@ class Rules(object):
         Rules.block_valid_transactions(new)
 
     @staticmethod
-    def transaction_valid_header(blk: Block, trx: Transaction) -> None:
+    # def transaction_valid_header(blk: Block, trx: Transaction) -> None:
+    def transaction_valid_header(trx: Transaction) -> None:
         if trx.version == 1:
             if trx.time_stamp > time():
                 raise TransactionRulesError('wrong time_stamp')
-            if trx.time_stamp > blk.time_stamp:
-                raise TransactionRulesError('wrong time_stamp')
+            # if trx.time_stamp > blk.time_stamp:
+            #     raise TransactionRulesError('wrong time_stamp')
 
             if type(trx) is CoinbaseTransaction:
                 return
