@@ -62,13 +62,13 @@ class RawMessage(object):
 
 class PeerListener(asyncio.DatagramProtocol):
     def __init__(self, msg_queue: asyncio.Queue, loop: asyncio.AbstractEventLoop) -> None: # type: ignore
-        self.__loop = loop
+        self.__io_loop = loop
         self.__msg_queue = msg_queue
     def connection_made(self, transport: asyncio.DatagramTransport) -> None: # type: ignore
         self.transport = transport
     def datagram_received(self, msg_raw:bytes, addr: PeerAddr) -> None: # type: ignore
         message = msg_raw.decode()
-        asyncio.ensure_future(self.__msg_queue.put(RawMessage(msg_raw, addr)), loop=self.__loop)
+        asyncio.ensure_future(self.__msg_queue.put(RawMessage(msg_raw, addr)), loop=self.__io_loop)
         logger.debug(f'receiving {message} from {addr}')
     def error_received(self, exc: OSError) -> None: # type: ignore
         logger.error(str(exc))
@@ -89,14 +89,14 @@ class Peer(object):
         self.__neighbors_addr: List[PeerAddr] = []
         self.__registered_commands: Dict[str, Tuple[Any, CommandHandler]] = {}
 
-        self.io_loop = loop
-        self.__msg_queue: asyncio.Queue = asyncio.Queue(loop=self.io_loop) # type: ignore
+        self.__io_loop = loop
+        self.__msg_queue: asyncio.Queue = asyncio.Queue(loop=self.__io_loop) # type: ignore
 
         logger.debug('initializing listener')
-        listener = self.io_loop.create_datagram_endpoint(lambda: PeerListener(self.__msg_queue, self.io_loop), local_addr=self.addr)
-        self.transport, _ = self.io_loop.run_until_complete(listener)
+        listener = self.__io_loop.create_datagram_endpoint(lambda: PeerListener(self.__msg_queue, self.__io_loop), local_addr=self.addr)
+        self.transport, _ = self.__io_loop.run_until_complete(listener)
         # asyncio.ensure_future(self.process_msg(), loop=self.io_loop)
-        self.procmsg_task = self.io_loop.create_task(self.process_msg())
+        self.procmsg_task = self.__io_loop.create_task(self.process_msg())
 
     def stop(self) -> None:
         logger.info(f'stopping peer {self.addr}')
@@ -120,7 +120,7 @@ class Peer(object):
 
     def send_msg(self, addr: PeerAddr, msg: Message) -> None:
         logger.debug(f'sending msg {msg} to {addr}')
-        self.io_loop.create_task(self.io_loop.create_datagram_endpoint(lambda: PeerSender(msg), remote_addr=addr))
+        self.__io_loop.create_task(self.__io_loop.create_datagram_endpoint(lambda: PeerSender(msg), remote_addr=addr))
 
     # def start(self, run = False) -> None:
     #     listener = self.io_loop.create_datagram_endpoint(lambda: PeerListener(self.__msg_queue, self.io_loop), local_addr=self.addr)

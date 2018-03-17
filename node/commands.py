@@ -69,13 +69,13 @@ class Command(Serializable):
 #         super().__init__('newtrx', {'trx': trx})
 #
 
-class NewTransactionCommand(Command):
+class AnnounceTransactionCommand(Command):
     name = 'newtrx'
     def __init__(self, trx: Transaction) -> None:
         super().__init__(trx=trx)
     @staticmethod
     def handler(ctx: Any, **kwargs:Any) -> None:
-        logger.debug(f'running "{NewTransactionCommand.name}" comand with {type(ctx)} {kwargs}')
+        logger.debug(f'running "{AnnounceTransactionCommand.name}" comand with {type(ctx)} {kwargs}')
         ctx.add_transaction(Transaction.unserialize(kwargs['trx']))
 
 class AnnounceBlockCommand(Command):
@@ -90,4 +90,4 @@ class AnnounceBlockCommand(Command):
     @staticmethod
     def handler(ctx: Any, **kwargs:Any) -> None:
         logger.debug(f'running "{AnnounceBlockCommand.name}" comand with {type(ctx)} {kwargs}')
-        ctx.add_block(Block.unserialize(kwargs['blk']))
+        ctx.ext_add_block(Block.unserialize(kwargs['blk']))

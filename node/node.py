@@ -13,13 +13,13 @@ import json
 from coinpy.core.block import Block, GENESIS_BLOCK
 from coinpy.core.output import Output, OutputID
 from coinpy.core.transaction import Transaction, CoinbaseTransaction, TransactionID
-from coinpy.core.crypto import Pubaddr, PrivkeyStorage
+from coinpy.core.crypto import Pubaddr, PrivkeyStorage, ID
 from coinpy.core.errors import TransactionRulesError
 
 from .consensus import Rules
 from .miner import Miner
 from .peer import Peer, PeerAddr
-from .commands import AnnounceBlockCommand, NewTransactionCommand
+from .commands import AnnounceBlockCommand, AnnounceTransactionCommand
 # import coinpy.node.peer as peer
 # import coinpy.node.commands as commands
 
@@ -42,21 +42,22 @@ class Node(object):
 
         self.__peer = Peer(self.__config.get('addr', PeerAddr(('127.0.0.1', 50001))), self.__io_loop)
         self.__peer.add_neighbors(self.__config.get('neighbors', []))
-        self.__peer.register_commnads([(self, NewTransactionCommand), (self, AnnounceBlockCommand)])
+        self.__peer.register_commnads([(self, AnnounceTransactionCommand), (self, AnnounceBlockCommand)])
 
     def stop(self) -> None:
         logger.info(f'stopping node')
         self.__peer.stop()
 
 
-    # async def get_transaction(self, trx_id: TransactionID) -> Transaction:
-    #     while True:
-    #         try:
-    #             return self.unprocessed_transactions[trx_id]
-    #         except KeyError:
-    #             await asyncio.sleep(5, loop=self.__io_loop)
-    #         except Exception as e:
-    #             logger.exception(str(e))
+    async def get_trx_data(self, trx_id: TransactionID) -> Transaction:
+        while True:
+            try:
+                return self.unprocessed_transactions[trx_id]
+            except KeyError:
+                logger.debug('wait')
+                await asyncio.sleep(5, loop=self.__io_loop)
+            except Exception as e:
+                logger.exception(str(e))
     #
     #
     # def check_validation_data(self, blk: Block) -> None:
@@ -73,11 +74,15 @@ class Node(object):
             self.__unprocess_trxs[trx_new.id] = trx_new
 
 
-    def add_block(self, blk_new: Block) -> None:
+    async def add_block(self, blk_new: Block) -> None:
         logger.debug(f'adding block {blk_new.id} {blk_new}')
+        await self.assebmle_helper_data(blk_new)
         self.validate_block(blk_new)
         self.proccess_block(blk_new)
         self.__ledger.append(blk_new)
+
+    def ext_add_block(self, blk_new: Block) -> None:
+        asyncio.ensure_future(self.add_block(blk_new), loop=self.__io_loop)
 
     def validate_block(self, blk: Block) -> None:
         logger.debug('validating block')
@@ -94,7 +99,7 @@ class Node(object):
                 if inp_id not in self.__unspent_outs:
                     raise TransactionRulesError('spent output as input')
 
-    def proccess_block(self, blk: Block) ->None:
+    def proccess_block(self, blk: Block) -> None:
         logger.debug('proccessing block')
         for trx_id in blk.transactions:
             for unspout in blk.trxs_data[trx_id].outputs: # type: ignore
@@ -107,29 +112,40 @@ class Node(object):
                 # remove trx from unproccessed trxs
                 del self.__unprocess_trxs[trx_id]
 
-    # def assebmle_helper_data(self, )
-
-    
-    def assemble_new_block(self, trxs_new: Dict[TransactionID, Transaction]) -> Block:
-        # coinbase trx
-        coinbase_outp = Output(10, Pubaddr(b''))
-        coinbase = CoinbaseTransaction(time(), [], [coinbase_outp])
-        # sign coinbase trx with default privkey
-        sk = PrivkeyStorage.load_signing_keys()
-        coinbase.sign(sk['default'])
-
+    async def assebmle_helper_data(self, blk: Block) -> None:
+        logger.debug('assembling data into block')
         # assemble full trxs/inputs data into block
         blk_trxs_data = {}
-        for trx in trxs_new.values():
+        for trx_id in blk.transactions:
+            trx = await self.get_trx_data(trx_id)
             trx_inputs_data = {inp_id: self.unspent_outputs[inp_id] for inp_id in trx.inputs}
             # append inputs (for validation purposes)
             trx.inputs_data = trx_inputs_data # type: ignore
             blk_trxs_data[trx.id] = trx
+        blk.trxs_data = blk_trxs_data # type: ignore
 
-        coinbase.inputs_data = {} # type: ignore
+    def assemble_new_block(self, trxs_new: Dict[TransactionID, Transaction]) -> Block:
+        # coinbase trx
+        coinbase_inpt_id = OutputID(ID(b'cinpt'))
+        coinbase_outp = Output(10, Pubaddr(b''))
+        coinbase = CoinbaseTransaction(time(), [coinbase_inpt_id], [coinbase_outp])
+        # sign coinbase trx with default privkey
+        sk = PrivkeyStorage.load_signing_keys()
+        coinbase.sign(sk['default'])
+        # self.__peer.send_bulk_commnad(AnnounceTransactionCommand(coinbase))
+
+        # sync mutation of assebmle_helper_data functionality
+        blk_trxs_data = {}
+        # for trx in trxs_new.values():
+        #     trx_inputs_data = {inp_id: self.unspent_outputs[inp_id] for inp_id in trx.inputs}
+        #     trx.inputs_data = trx_inputs_data # type: ignore
+        #     blk_trxs_data[trx.id] = trx
+        #
+        # coinbase.inputs_data = {} # type: ignore
         blk_trxs_data[coinbase.id] = coinbase
         # assemble trxs into block
-        blk_new = Block(time(), self.__ledger[-1], [*blk_trxs_data.keys()])
+        # blk_new = Block(time(), self.__ledger[-1], [*blk_trxs_data.keys()])
+        blk_new = Block(time(), self.__ledger[-1], [coinbase.id, *trxs_new.keys()])
         # append full trx data to block data for validation purposes
         blk_new.trxs_data = blk_trxs_data # type: ignore
         return blk_new
@@ -146,10 +162,12 @@ class Node(object):
         while True:
             try:
                 blk_new = self.__mined_block_queue.get_nowait()
+                _, coinbase = blk_new.trxs_data.popitem()
+                self.__peer.send_bulk_commnad(AnnounceTransactionCommand(coinbase))
+                await self.add_block(blk_new)
+                self.__peer.send_bulk_commnad(AnnounceBlockCommand(blk_new))
                 for m in miners:
                     m.terminate()
-                self.add_block(blk_new)
-                self.__peer.send_bulk_commnad(AnnounceBlockCommand(blk_new))
                 return
             except queue.Empty:
                 await asyncio.sleep(1, loop=self.__io_loop)

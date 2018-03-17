@@ -34,7 +34,8 @@ BlockHash = Hash(digest_size = 33, person = b'BlockHash')
 BlockID = NewType('BlockID', ID)
 
 class Block(Serializable):
-    def __init__(self, time_stamp: float, prev_blk: 'Block', trxs: List[TransactionID], nonce: int = 0) -> None:
+    # def __init__(self, time_stamp: float, prev_blk: 'Block', trxs: List[TransactionID], nonce: int = 0) -> None:
+    def __init__(self, time_stamp: float, prev_blk: 'Block', trxs: List[Transaction], nonce: int = 0) -> None:
         self.version = BLOCK_VERSION
         self.nonce = nonce
         prev_blk.validate()
@@ -65,10 +66,10 @@ class Block(Serializable):
             self.difficulty = json_obj[KEY_BLOCK_DIFFICULTY]
             self.transactions = []
             for trx in json_obj[KEY_BLOCK_TRXS]:
-                self.transactions.append(TransactionID(ID(Utils.str_to_bytes(trx))))
+                # self.transactions.append(TransactionID(ID(Utils.str_to_bytes(trx))))
+                self.transactions.append(Transaction.unserialize(trx))
         except Exception as e:
             raise DataError(str(e)) from e
-        # self.__id = BlockID(ID(BlockHash.digest(str(self).encode('utf-8'))))
 
 
     def validate(self) -> None:

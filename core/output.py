@@ -47,3 +47,9 @@ class Output(Serializable):
     def id(self) -> OutputID:
         # return self.__id
         return OutputID(ID(OutputHash.digest(str(self).encode('utf-8'))))
+
+# class CoinbaseInput(Output):
+#     def validate(self) -> None:
+#         # coinbase input must have empty pubaddr field
+#         if self.amount is None or self.pubaddr is not None:
+#             raise ValidationError

@@ -89,7 +89,8 @@ class Transaction(Serializable):
 
 
 class CoinbaseTransaction(Transaction):
-    def validate(self) -> None:
-        if (self.time_stamp is None or self.inputs is None or self.outputs is None
-                or len(self.outputs) == 0):
-            raise ValidationError
+    pass
+    # def validate(self) -> None:
+    #     if (self.time_stamp is None or self.inputs is None or self.outputs is None
+    #             or len(self.outputs) == 0):
+    #         raise ValidationError

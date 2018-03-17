@@ -1,10 +1,13 @@
 from time import time
 from typing import Dict
 
-from coinpy.core.crypto import Pubkey
+from coinpy.core.crypto import Pubkey, ID
 from coinpy.core.block import Block
 from coinpy.core.transaction import Transaction, CoinbaseTransaction
 from coinpy.core.errors import ConsensusError, BlockRulesError, TransactionRulesError
+
+from coinpy.core.output import OutputID
+
 
 class Rules(object):
     @staticmethod
@@ -38,6 +41,14 @@ class Rules(object):
         Rules.block_valid_transactions(new)
 
     @staticmethod
+    def transaction_is_coinbase(trx: Transaction) -> bool:
+        if len(trx.inputs) == 1 and len(trx.outputs) == 1 and trx.inputs[0] == OutputID(ID(b'cinpt')):
+            print('................................je')
+            return True
+        print('................................nieje')            
+        return False
+
+    @staticmethod
     # def transaction_valid_header(blk: Block, trx: Transaction) -> None:
     def transaction_valid_header(trx: Transaction) -> None:
         if trx.version == 1:
@@ -46,7 +57,9 @@ class Rules(object):
             # if trx.time_stamp > blk.time_stamp:
             #     raise TransactionRulesError('wrong time_stamp')
 
-            if type(trx) is CoinbaseTransaction:
+            # if type(trx) is CoinbaseTransaction:
+            #     return
+            if Rules.transaction_is_coinbase:
                 return
 
             #  only inputs from the same pubaddr allowed
