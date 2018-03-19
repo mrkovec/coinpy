@@ -96,7 +96,7 @@ class Peer(object):
         listener = self.__io_loop.create_datagram_endpoint(lambda: PeerListener(self.__msg_queue, self.__io_loop), local_addr=self.addr)
         self.transport, _ = self.__io_loop.run_until_complete(listener)
         # asyncio.ensure_future(self.process_msg(), loop=self.io_loop)
-        self.procmsg_task = self.__io_loop.create_task(self.process_msg())
+        self.__procmsg_task = self.__io_loop.create_task(self.msg_process())
 
     def stop(self) -> None:
         logger.info(f'stopping peer {self.addr}')
@@ -113,14 +113,30 @@ class Peer(object):
         # self.__msg_queue.close()
 
         # cancel msg proccessing
-        # self.procmsg_task.cancel()
-        # self.io_loop.run_until_complete(self.procmsg_task)
-
+        self.__procmsg_task.cancel()
+        # self.__io_loop.run_until_complete(self.procmsg_task)
         self.transport.close()
 
-    def send_msg(self, addr: PeerAddr, msg: Message) -> None:
+    def msg_send(self, addr: PeerAddr, msg: Message) -> None:
         logger.debug(f'sending msg {msg} to {addr}')
         self.__io_loop.create_task(self.__io_loop.create_datagram_endpoint(lambda: PeerSender(msg), remote_addr=addr))
+
+    async def msg_process(self) -> None:
+        logger.debug('waiting for messages')
+        while True:
+            try:
+                msg_raw = await self.__msg_queue.get()
+                msg = msg_raw.message
+                logger.debug(f'executing "{msg.command}"{self.__registered_commands[msg.command.name]}')
+                ctx, comm = self.__registered_commands[msg.command.name]
+                comm(ctx, **{**msg.command.params, 'source_msg': msg})
+                # self.__registered_commands[msg.command.name](self, **{**msg.command.params, 'source_msg': msg})
+                self.__msg_queue.task_done()
+            except asyncio.CancelledError:
+                # logger.debug("fiiiiiiiiiiii")
+                return
+            except Exception as e:
+                logger.exception(str(e))
 
     # def start(self, run = False) -> None:
     #     listener = self.io_loop.create_datagram_endpoint(lambda: PeerListener(self.__msg_queue, self.io_loop), local_addr=self.addr)
@@ -137,45 +153,28 @@ class Peer(object):
     #     # self.io_loop.close()
 
 
-    def add_neighbors(self, ns: List[PeerAddr]) -> None:
+    def neighbors_add(self, ns: List[PeerAddr]) -> None:
         for n in ns:
             if n not in self.__neighbors_addr:
                 logger.debug(f'adding peer neighbor {n}')
                 self.__neighbors_addr.append(n)
 
-    def register_commnads(self, comms: List[Tuple[Any, Type[Command]]]) -> None:
+    def commnads_register(self, comms: List[Tuple[Any, Type[Command]]]) -> None:
         for ctx_comm in comms:
             ctx, comm = ctx_comm
             logger.debug(f'registering "{comm.name}" commnad handler {comm.handler}')
             self.__registered_commands[comm.name] = (ctx, comm.handler) # type: ignore
 
-    def send_command(self, addr: PeerAddr, comm: Command) -> None:
+    def command_send(self, addr: PeerAddr, comm: Command) -> None:
         logger.debug(f'sending commnad {comm}{type(comm)} to {addr}')
-        self.send_msg(addr, Message(comm, self.addr))
+        self.msg_send(addr, Message(comm, self.addr))
 
-    def send_bulk_commnad(self, comm: Command) -> None:
+    def commnad_send_bulk(self, comm: Command) -> None:
         logger.debug(f'sending {type(comm)} commnad {comm} to {self.__neighbors_addr}')
         m = Message(comm, self.addr)
         for addr in self.__neighbors_addr:
-            self.send_msg(addr, m)
+            self.msg_send(addr, m)
 
-    def direct_commnad(self, comm: Command) -> None:
-        msg = Message(comm, self.addr)
-        self.__msg_queue.put(RawMessage(msg.raw, self.addr))
-
-    async def process_msg(self) -> None:
-        logger.debug('waiting for messages')
-        while True:
-            try:
-                msg_raw = await self.__msg_queue.get()
-                msg = msg_raw.message
-                logger.debug(f'executing "{msg.command}"{self.__registered_commands[msg.command.name]}')
-                ctx, comm = self.__registered_commands[msg.command.name]
-                comm(ctx, **{**msg.command.params, 'source_msg': msg})
-                # self.__registered_commands[msg.command.name](self, **{**msg.command.params, 'source_msg': msg})
-                self.__msg_queue.task_done()
-            except asyncio.CancelledError:
-                logger.debug("fiiiiiiiiiiii")
-                return
-            except Exception as e:
-                logger.exception(str(e))
+    # def commnad_direct(self, comm: Command) -> None:
+    #     msg = Message(comm, self.addr)
+    #     self.__msg_queue.put(RawMessage(msg.raw, self.addr))

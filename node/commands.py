@@ -68,6 +68,26 @@ class Command(Serializable):
 #     def __init__(self, trx: Transaction) -> None:
 #         super().__init__('newtrx', {'trx': trx})
 #
+class GreetCommand(Command):
+    name = 'greet'
+    def __init__(self, blk_height: int) -> None:
+        super().__init__(height=blk_height)
+    @staticmethod
+    def handler(ctx: Any, **kwargs:Any) -> None:
+        logger.debug(f'running "{GreetCommand.name}" comand with {type(ctx)} {kwargs}')
+        ctx.command_greet(kwargs['height'], kwargs['source_msg'].from_addr)
+        # ctx.__peer.commnad_send(kwargs['source_msg'].from_addr, ReplyGreetCommand(ctx.__ledger[-1].height))
+        # ctx.add_transaction(Transaction.unserialize(kwargs['trx']))
+
+class ReplyGreetCommand(Command):
+    name = 'regreet'
+    def __init__(self, blk_height: int) -> None:
+        super().__init__(height=blk_height)
+    @staticmethod
+    def handler(ctx: Any, **kwargs:Any) -> None:
+        logger.debug(f'running "{ReplyGreetCommand.name}" comand with {type(ctx)} {kwargs}')
+        ctx.command_replygreet()
+        # ctx.add_transaction(Transaction.unserialize(kwargs['trx']))
 
 class AnnounceTransactionCommand(Command):
     name = 'newtrx'
@@ -86,8 +106,8 @@ class AnnounceBlockCommand(Command):
     """
     def __init__(self, blk: Block) -> None:
         super().__init__(blk=blk)
-    """Handler for received `Block``."""
+    """Handler for received `Block`."""
     @staticmethod
     def handler(ctx: Any, **kwargs:Any) -> None:
         logger.debug(f'running "{AnnounceBlockCommand.name}" comand with {type(ctx)} {kwargs}')
-        ctx.ext_add_block(Block.unserialize(kwargs['blk']))
+        ctx.block_add(Block.unserialize(kwargs['blk']))

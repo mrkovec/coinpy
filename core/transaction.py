@@ -1,11 +1,12 @@
 import logging
 # from json import loads as JSONloads
+from time import time
 
 from .output import (
     Output, OutputID
 )
 from .crypto import (
-    Hash, Serializable, ID, Pubkey, Privkey, SerializableEncoder, Utils
+    Hash, Serializable, ID, Pubkey, Privkey, SerializableEncoder, Utils as CryptoUtils, Pubaddr, PrivkeyStorage
 )
 from .errors import DataError, ValidationError
 
@@ -19,6 +20,8 @@ KEY_TRANS_INPS = 'inps'
 KEY_TRANS_OUTPS = 'outps'
 KEY_TRANS_SIGN = 'sign'
 KEY_TRANS_SIGN_PUBKEY = 'pubkey'
+
+COINBASE_INP_ID = OutputID(ID(b'cinpt'))
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +61,7 @@ class Transaction(Serializable):
             KEY_TRANS_TIME_STAMP: self.time_stamp,
             KEY_TRANS_INPS: self.inputs,
             KEY_TRANS_OUTPS: self.outputs,
-            KEY_TRANS_SIGN : Utils.bytes_to_str(self.signature),
+            KEY_TRANS_SIGN : CryptoUtils.bytes_to_str(self.signature),
             KEY_TRANS_SIGN_PUBKEY : str(self.signature_pubkey)
         }
 
@@ -74,12 +77,12 @@ class Transaction(Serializable):
             self.time_stamp = json_obj[KEY_TRANS_TIME_STAMP]
             self.inputs = []
             for inp in json_obj[KEY_TRANS_INPS]:
-                self.inputs.append(OutputID(ID(Utils.str_to_bytes(inp))))
+                self.inputs.append(OutputID(ID(CryptoUtils.str_to_bytes(inp))))
             self.outputs = []
             for outp in json_obj[KEY_TRANS_OUTPS]:
                 self.outputs.append(Output.unserialize(outp))
-            self.signature = Utils.str_to_bytes(json_obj[KEY_TRANS_SIGN])
-            self.signature_pubkey = Pubkey(Utils.str_to_bytes(json_obj[KEY_TRANS_SIGN_PUBKEY]))
+            self.signature = CryptoUtils.str_to_bytes(json_obj[KEY_TRANS_SIGN])
+            self.signature_pubkey = Pubkey(CryptoUtils.str_to_bytes(json_obj[KEY_TRANS_SIGN_PUBKEY]))
         except Exception as e:
             raise DataError(str(e)) from e
 
@@ -88,8 +91,26 @@ class Transaction(Serializable):
         return TransactionID(ID(TransactionHash.digest(str(self).encode('utf-8'))))
 
 
-class CoinbaseTransaction(Transaction):
-    pass
+class Utils(object):
+    @staticmethod
+    def coinbase_transaction() -> Transaction:
+        coinbase_inpt_id = COINBASE_INP_ID
+        coinbase_outp = Output(10, Pubaddr(b''))
+        coinbase = Transaction(time(), [coinbase_inpt_id], [coinbase_outp])
+        # sign coinbase trx with default privkey
+        sk = PrivkeyStorage.load_signing_keys()
+        coinbase.sign(sk['default'])
+        return coinbase
+
+    @staticmethod
+    def transaction_is_coinbase(trx: Transaction) -> bool:
+        if len(trx.inputs) == 1 and len(trx.outputs) == 1 and trx.inputs[0] == COINBASE_INP_ID:
+            return True
+        return False
+
+# class CoinbaseTransaction(Transaction):
+#     def __init__(self, time_stamp: float, inps: List[OutputID], outps: List[Output]) -> None:
+
     # def validate(self) -> None:
     #     if (self.time_stamp is None or self.inputs is None or self.outputs is None
     #             or len(self.outputs) == 0):

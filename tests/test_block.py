@@ -32,7 +32,7 @@ class TestBlockMethods(unittest.TestCase):
 #     def test_mine_genesis_block(self) -> None:
 #         n = 0
 #         t = time()
-#         dif = 1
+#         dif = 2
 #         while 1:
 #             blk = GenesisBlock(dif, n, t)
 #             try:

@@ -3,7 +3,7 @@ from typing import Dict
 
 from coinpy.core.crypto import Pubkey, ID
 from coinpy.core.block import Block
-from coinpy.core.transaction import Transaction, CoinbaseTransaction
+from coinpy.core.transaction import Transaction, Utils
 from coinpy.core.errors import ConsensusError, BlockRulesError, TransactionRulesError
 
 from coinpy.core.output import OutputID
@@ -13,7 +13,7 @@ class Rules(object):
     @staticmethod
     def block_valid_header(prev: Block, new: Block) -> None:
         if new.version == 1:
-            if prev.height >= new.height:
+            if prev.height >= new.height or new.height - prev.height > 1:
                 raise BlockRulesError('wrong height')
             if prev.time_stamp > time():
                 raise BlockRulesError('wrong time_stamp')
@@ -32,7 +32,8 @@ class Rules(object):
 
     @staticmethod
     def block_valid_transactions(blk: Block) -> None:
-        for trx in blk.trxs_data.values():
+        # for trx in blk.trxs_data.values():
+        for trx in blk.transactions:
             Rules.transaction_valid_header(trx)
 
     @staticmethod
@@ -40,13 +41,6 @@ class Rules(object):
         Rules.block_valid_header(prev, new)
         Rules.block_valid_transactions(new)
 
-    @staticmethod
-    def transaction_is_coinbase(trx: Transaction) -> bool:
-        if len(trx.inputs) == 1 and len(trx.outputs) == 1 and trx.inputs[0] == OutputID(ID(b'cinpt')):
-            print('................................je')
-            return True
-        print('................................nieje')            
-        return False
 
     @staticmethod
     # def transaction_valid_header(blk: Block, trx: Transaction) -> None:
@@ -59,7 +53,7 @@ class Rules(object):
 
             # if type(trx) is CoinbaseTransaction:
             #     return
-            if Rules.transaction_is_coinbase:
+            if Utils.transaction_is_coinbase:
                 return
 
             #  only inputs from the same pubaddr allowed
