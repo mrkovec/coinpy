@@ -3,6 +3,7 @@ import time
 import threading
 import logging
 import asyncio
+import sys
 from typing import Dict, Any
 
 from io import StringIO
@@ -56,6 +57,7 @@ class PingCommand(Command):
     @staticmethod
     def handler(ctx: Any, **kwargs:Any) -> None:
         print(f'{PingCommand.name} from {kwargs["source_msg"].from_addr}')
+        sys.stdout.flush()
         ctx.commnad_send_bulk(PongCommand())
 
 class PongCommand(Command):
@@ -63,3 +65,4 @@ class PongCommand(Command):
     @staticmethod
     def handler(ctx: Any, **kwargs:Any) -> None:
         print(f'{PongCommand.name} from {kwargs["source_msg"].from_addr}')
+        sys.stdout.flush()
