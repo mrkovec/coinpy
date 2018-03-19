@@ -17,11 +17,11 @@ Python implementation of a basic blockchain (bitcoin inspired and simplified) fu
 +---------------+    | |output2.id  +-----------+ |      |  +-----------------------+  |              
                      | |     .      |     .     | |      |  |     transactions      |  |              
                      | |     .      |     .     | |      |  +-----------------------+  |              
-                     | |     .      +-----------+ |      |  |    transaction1.id    |  |              
-                     | |outputN.id  | outputN   | |      |  |    transaction2.id    |  |              
+                     | |     .      +-----------+ |      |  |     transaction1      |  |              
+                     | |outputN.id  | outputN   | |      |  |     transaction2      |  |              
                      | +------------+-----------+ |      |  |          .            |  |              
                      +--------------+-------------+      |  |          .            |  |              
-                     |              |             |      |  |    transactionN.id    |  |              
+                     |              |             |      |  |     transactionN      |  |              
                      |     +--------v-------+     |      |  +-----------------------+  |              
                      |     |   signature    |     |      +--------------+--------------+              
                      |     +----------------+     |                     |                             
