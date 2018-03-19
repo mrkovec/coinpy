@@ -62,10 +62,10 @@ Python implementation of a basic blockchain (bitcoin inspired and simplified) fu
                                                          |               |                                                           
                                                          +---------------+                                                           
 ```
-- [x] peer functionality
+- [x] peer-to-peer functionality
 - [x] consensus rules
-- [x] block assembling, mining and announcing
-- [ ] nodes blockchain sync
+- [x] block assembling, mining, announcing and chaining
+- [ ] nodes blockchain sync / fork merging
 - [ ] blockchain persistence
 - [ ] wallet functionality
 - [ ] NAT traversal
