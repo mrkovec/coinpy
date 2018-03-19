@@ -39,7 +39,7 @@ Python implementation of a basic blockchain (bitcoin inspired and simplified) fu
 |      +--------------------------------------------+                           +------------------------------------------+     |   
 |      |                    blockN                  +-------------+             |                  blockN+1                +---> |   
 |      +--------------------------------------------+             |             +------------------------------------------+     |   
-|  --->+                prev_block_id               |             +------------->                prev_block_id             |     |   
+|  --->+                prev_block_id               |             +------------>+                prev_block_id             |     |   
 |      +--------------------------------------------+                           +------------------------------------------+     |   
 |      |                 transactionN               |                           |              transactionN                |     |   
 | +--->+ inputM from pubadrA     outputM to pubadrC +-+                    ---->+ inputM from pubadrB   outputM to pubadrD +--+  |   
