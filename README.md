@@ -1,7 +1,8 @@
 [![Build Status](https://travis-ci.org/mrkovec/coinpy.svg?branch=master)](https://travis-ci.org/mrkovec/coinpy)
 [![Coverage Status](https://coveralls.io/repos/github/mrkovec/coinpy/badge.svg)](https://coveralls.io/github/mrkovec/coinpy)
 # coinpy
-Basick blockchain implementation writen in Python. 
+Python implementation of a basic blockchain (bitcoin inspired and simplified) functionality for learning purposes (python3/asyncio/xmlrpc).
+
 - [x] output/transaction/block/ledger data and functionality design
 ```
 +---------------+    +----------------------------+      +-----------------------------+              
