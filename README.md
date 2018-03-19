@@ -1,6 +1,8 @@
 [![Build Status](https://travis-ci.org/mrkovec/coinpy.svg?branch=master)](https://travis-ci.org/mrkovec/coinpy)
 [![Coverage Status](https://coveralls.io/repos/github/mrkovec/coinpy/badge.svg)](https://coveralls.io/github/mrkovec/coinpy)
 # coinpy
+Basick blockchain implementation writen in Python. 
+- [x] output/transaction/block/ledger data and functionality design
 ```
 +---------------+    +----------------------------+      +-----------------------------+              
 |    output     |    |        transaction         |      |            block            |              
@@ -55,7 +57,15 @@
                                                       |  |               |   |                                                |      
                                                       +-----> pubadrC -------+                                                |      
                                                          |               |                                                    |      
-                                                         |    pubadrD <--------------------------------------------------------      
+                                                         |    pubadrD <-------------------------------------------------------+     
                                                          |               |                                                           
                                                          +---------------+                                                           
 ```
+- [x] peer functionality
+- [x] consensus rules
+- [x] block assembling, mining and announcing
+- [ ] nodes blockchain sync
+- [ ] blockchain persistence
+- [ ] wallet functionality
+- [ ] NAT traversal
+- [ ] IPFS
