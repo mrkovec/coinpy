@@ -27,7 +27,8 @@ class Rules(object):
     @staticmethod
     def block_valid_difficulty(blk: Block) -> None:
         for i in range(blk.difficulty):
-            if bytes(blk.id)[i] != 0:
+            blk_hash = bytes(blk.id)
+            if blk_hash[i] != 0:
                 raise BlockRulesError('wrong data')
 
     @staticmethod

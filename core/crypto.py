@@ -1,3 +1,4 @@
+"""A collection of cryptography related functions. """
 import hashlib
 import base64
 import json
@@ -15,25 +16,27 @@ from . import (
     JsonDict, Tuple, Dict, TypeVar, Any, Type, Union, Optional
 )
 from coinpy.definitions import KEYS_PATH
-# logging.basicConfig(level=logging.ERROR)
 logger = logging.getLogger(__name__)
 
 
 class Utils(object):
     @staticmethod
-    def str_to_bytes(data_str: Optional[str]) -> bytes:
-        if data_str is None:
-            raise ValueError('no data to convert')
-        return base64.b64decode(data_str)
-
-    @staticmethod
     def bytes_to_str(data_bytes: Optional[bytes]) -> str:
+        """Convert ``bytes`` to a base64 encoded ``string`` object."""
         if data_bytes is None:
             raise ValueError('no data to convert')
         return base64.b64encode(data_bytes).decode('utf-8')
 
+    @staticmethod
+    def str_to_bytes(data_str: Optional[str]) -> bytes:
+        """Decode base64 encoded ``string`` to a ``bytes`` object."""
+        if data_str is None:
+            raise ValueError('no data to convert')
+        return base64.b64decode(data_str)
+
 
 class Hash(object):
+    """Wrapper class for Blake2b hash function."""
     def __init__(self,  digest_size: int, person: bytes) -> None:
         self.__digest_size = digest_size
         self.__person = person
@@ -47,21 +50,30 @@ class Hash(object):
 T = TypeVar('T', bound='Serializable')
 
 class Serializable(object):
+    """Base class for all serializable objects.
+    Child class must overload ``_serialize``,
+    ``_unserialize`` and ``validate`` functions.
+    """
     def _serialize(self) -> JsonDict:
+        """Serialize object data into a key/value dictionary."""
         raise NotImplementedError('Serializable._serialize')
 
     def _unserialize(self, json_obj: JsonDict) -> None:
+        """Fill object data from key/value dictionary."""
         raise NotImplementedError('Serializable._unserialize')
 
     def validate(self) -> None:
+        """Validate object."""
         raise NotImplementedError('Serializable.validate')
 
     def serialize(self) -> JsonDict:
+        """Return child object data as key/value dictionary."""
         self.validate()
         return self._serialize()
 
     @classmethod
     def unserialize(cls: Type[T], json_obj: JsonDict) -> T:
+        """Create and fill new child object from key/value dictionary."""
         serial_new = cls.__new__(cls)
         serial_new._unserialize(json_obj)
         serial_new.validate()
@@ -69,6 +81,7 @@ class Serializable(object):
 
     @classmethod
     def unserialize_json(cls: Type[T], json_str: str) -> T:
+        """Create and fill new child object from json string."""
         try:
             return cls.unserialize(json.loads(json_str))
         except Error:
@@ -78,10 +91,12 @@ class Serializable(object):
             raise SerializeError(str(e)) from e
 
     def __str__(self) -> str:
+        """Return object as json string."""
         return SerializableEncoder().encode(self)
 
 
 class SerializableEncoder(json.JSONEncoder):
+    """``JSONEncoder`` implementation for ``Serializable`` object."""
     def default(self, obj: Serializable) -> Union[JsonDict, str]:
         try:
             return obj.serialize()
@@ -94,8 +109,8 @@ class SerializableEncoder(json.JSONEncoder):
 
 
 class ID(Serializable):
+    """Base class for default object ID functionality."""
     def __init__(self, id_bytes: bytes) -> None:
-        # logger.debug(f'ID__init__({id_bytes})')
         self.__val = id_bytes
 
     def __eq__(self, other: 'ID') -> bool: # type: ignore
@@ -122,12 +137,9 @@ class Pubaddr(ID):
 
 
 class Pubkey(object):
+    """ecdsa verifying key."""
     def __init__(self, vk_bytes: bytes) -> None:
         self.__verifying_key = VerifyingKey.from_string(vk_bytes, curve=SECP256k1)
-
-    # @classmethod
-    # def from_str(cls, vk_str: str) -> 'Pubkey':
-    #     return cls(Utils.str_to_bytes(vk_str))
 
     def __str__(self) -> str:
         return Utils.bytes_to_str(self.__verifying_key.to_string())
@@ -144,6 +156,7 @@ class Pubkey(object):
 
 
 class Privkey(object):
+    """ecdsa signing key."""
     def __init__(self, sk: SigningKey) -> None:
         self.__signing_key = sk
 

@@ -5,12 +5,15 @@ import io
 from .setup import PEM_FILE_DATA, TEST_PUBKEY
 
 from coinpy.core.crypto import (
-    Serializable, Privkey, Pubkey, Utils, ID
+    Serializable, Privkey, Pubkey, Utils, ID, Hash
 )
 from coinpy.core import JsonDict
 
 class TestUtils(unittest.TestCase):
     def test_convert(self) -> None:
+        # print(list(Hash(16, b'0').digest(b'0').iterbytes()))
+        # bytes_obj = Hash(16, b'0').digest(b'0')
+        # print([int(bytes_obj[i:i+1]) for i in range(len(bytes_obj))])
         self.assertEqual(b'abc', Utils.str_to_bytes(Utils.bytes_to_str(b'abc')))
 
     def test_convert_none(self) -> None:
@@ -67,4 +70,5 @@ class TestPubkey(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()
+
+	unittest.main()

@@ -1,5 +1,6 @@
+"""Transaction functionality."""
 import logging
-# from json import loads as JSONloads
+
 from time import time
 
 from .output import (
