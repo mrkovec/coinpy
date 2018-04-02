@@ -1,6 +1,6 @@
 """A collection of cryptography related functions. """
 import hashlib
-import base64
+# import base64
 import json
 import io
 import os
@@ -25,14 +25,16 @@ class Utils(object):
         """Convert ``bytes`` to a base64 encoded ``string`` object."""
         if data_bytes is None:
             raise ValueError('no data to convert')
-        return base64.b64encode(data_bytes).decode('utf-8')
+        # return base64.b64encode(data_bytes).decode('utf-8')
+        return data_bytes.hex()
 
     @staticmethod
     def str_to_bytes(data_str: Optional[str]) -> bytes:
         """Decode base64 encoded ``string`` to a ``bytes`` object."""
         if data_str is None:
             raise ValueError('no data to convert')
-        return base64.b64decode(data_str)
+        # return base64.b64decode(data_str)
+        return bytes.fromhex(data_str)
 
 
 class Hash(object):
@@ -42,7 +44,8 @@ class Hash(object):
         self.__person = person
 
     def digest(self, data: bytes) -> bytes:
-        h = hashlib.blake2b(digest_size=self.__digest_size, person=self.__person) # type: ignore
+        # h = hashlib.blake2b(digest_size=self.__digest_size, person=self.__person) # type: ignore
+        h = hashlib.sha256()
         h.update(data)
         return h.digest()
 

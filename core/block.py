@@ -98,4 +98,4 @@ class GenesisBlock(Block):
     def id(self) -> BlockID:
         return BlockID(ID(BlockHash.digest(str(self).encode('utf-8'))))
 
-GENESIS_BLOCK =  GenesisBlock(2, 38010, 1521365049.2900221)
+GENESIS_BLOCK =  GenesisBlock(2, 41324, 1522678247.1902204)

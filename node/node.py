@@ -47,7 +47,7 @@ class Node(object):
 
         self.__generate_blocks = self.__config.get('gen', 0)
         self.__miners: List[multiprocessing.Process] = []
-        # self.block_mining_start()
+        self.block_mining_start()
 
         self.__peer.commnad_send_bulk(GreetCommand(self.__ledger[-1].height))
 
