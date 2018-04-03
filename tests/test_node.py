@@ -9,24 +9,24 @@ from coinpy.core.block import Block
 from coinpy.node.peer import Peer, PeerAddr
 
 logging.basicConfig(level=logging.DEBUG)
-class TestNodeGreet(unittest.TestCase):
-    def setUp(self) -> None:
-        asyncio.set_event_loop(None)
-        self.loop1 = asyncio.new_event_loop()
-        self.loop2 = asyncio.new_event_loop()
-        self.n1 = Node(self.loop1, addr=PeerAddr(('127.0.0.1', 50011)), neighbors=[('127.0.0.1', 50012)], gen=1)
-        self.n2 = Node(self.loop2, addr=PeerAddr(('127.0.0.1', 50012)), neighbors=[('127.0.0.1', 50011)])
-
-    def test_async_mining(self) -> None:
-        # asyncio.ensure_future(self.n1.mine_block(), loop=self.loop1)
-        # self.loop1.run_until_complete()
-        threading.Thread(target=lambda: self.loop1.run_forever(), daemon=True).start()
-        # self.n1.block_mining_start()
-        # time.sleep(10)
-        threading.Thread(target=lambda: self.loop2.run_forever(), daemon=True).start()
-        time.sleep(3)
-        self.n1.stop()
-        self.n2.stop()
+# class TestNodeGreet(unittest.TestCase):
+#     def setUp(self) -> None:
+#         asyncio.set_event_loop(None)
+#         self.loop1 = asyncio.new_event_loop()
+#         self.loop2 = asyncio.new_event_loop()
+#         self.n1 = Node(self.loop1, addr=PeerAddr(('127.0.0.1', 50011)), neighbors=[('127.0.0.1', 50012)], gen=1)
+#         self.n2 = Node(self.loop2, addr=PeerAddr(('127.0.0.1', 50012)), neighbors=[('127.0.0.1', 50011)])
+#
+#     def test_async_mining(self) -> None:
+#         # asyncio.ensure_future(self.n1.mine_block(), loop=self.loop1)
+#         # self.loop1.run_until_complete()
+#         threading.Thread(target=lambda: self.loop1.run_forever(), daemon=True).start()
+#         # self.n1.block_mining_start()
+#         # time.sleep(10)
+#         threading.Thread(target=lambda: self.loop2.run_forever(), daemon=True).start()
+#         time.sleep(3)
+#         self.n1.stop()
+#         self.n2.stop()
         # time.sleep(1)
 
 # class TestNodeTrx(unittest.TestCase):
@@ -71,16 +71,16 @@ class TestNodeGreet(unittest.TestCase):
 #         # self.loop1.set_debug(True)
 #         # self.loop2.set_debug(True)
 #         self.n1 = Node(self.loop1, addr=PeerAddr(('127.0.0.1', 50001)), neighbors=[('127.0.0.1', 50002)])
-#         self.n2 = Node(self.loop2, addr=PeerAddr(('127.0.0.1', 50002)), neighbors=[('127.0.0.1', 50001)], gen=1)
+#         # self.n2 = Node(self.loop2, addr=PeerAddr(('127.0.0.1', 50002)), neighbors=[('127.0.0.1', 50001)], gen=1)
 #
 #     def test_async_mining(self) -> None:
 #         # asyncio.ensure_future(self.n1.mine_block(), loop=self.loop1)
 #         # self.loop1.run_forever()
 #         threading.Thread(target=lambda: self.loop1.run_forever(), daemon=True).start()
-#         threading.Thread(target=lambda: self.loop2.run_forever(), daemon=True).start()
+#         # threading.Thread(target=lambda: self.loop2.run_forever(), daemon=True).start()
 #         time.sleep(10)
 #         self.n1.stop()
-#         self.n2.stop()
+#         # self.n2.stop()
 #         time.sleep(5)
 
 

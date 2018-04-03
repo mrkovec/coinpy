@@ -18,7 +18,7 @@ from coinpy.core.crypto import Pubaddr, PrivkeyStorage, ID
 from coinpy.core.errors import TransactionRulesError
 
 from .consensus import Rules
-from .miner import Miner
+from .miner import Miner, ExternalMiner
 from .peer import Peer, PeerAddr
 from .commands import GreetCommand, ReplyGreetCommand, AnnounceBlockCommand, AnnounceTransactionCommand
 # import coinpy.node.peer as peer
@@ -47,9 +47,12 @@ class Node(object):
 
         self.__generate_blocks = self.__config.get('gen', 0)
         self.__miners: List[multiprocessing.Process] = []
-        self.block_mining_start()
+        # self.block_mining_start()
+        self.__extminer_task = self.__io_loop.create_task(self.block_external_mining_start(PeerAddr(('127.0.0.1', 4040))))
 
-        self.__peer.commnad_send_bulk(GreetCommand(self.__ledger[-1].height))
+
+
+        # self.__peer.commnad_send_bulk(GreetCommand(self.__ledger[-1].height))
 
     def stop(self) -> None:
         logger.info('stopping node')
@@ -112,6 +115,9 @@ class Node(object):
         blk_new = Block(time(), self.__ledger[-1], [coinbase, *trxs_new])
         return blk_new
 
+    def block_assemble_new_full(self) -> Block:
+        return self.block_assemble_new([*self.unprocessed_transactions.values()])
+
     async def block_await(self) -> None:
         while True:
             try:
@@ -135,11 +141,20 @@ class Node(object):
             logger.debug(f'starting mining process {p}')
             self.__miners.append(p)
 
+    async def block_external_mining_start(self, addr: PeerAddr) -> None:
+        ext_miner = ExternalMiner(self.__io_loop, addr, self.__mined_block_queue, self.block_assemble_new_full)
+        await ext_miner.run()
+    #     p = multiprocessing.Process(target=ext_miner.run, daemon=True)
+    #     p.start()
+    #     logger.debug(f'starting external mining process {p}')
+    #     self.__miners.append(p)
+
     def block_mining_stop(self) -> None:
         for p in self.__miners:
             p.terminate()
             logger.debug(f'terminating mining process {p}')
         self.__miners = []
+
 
     def command_greet(self, height:int, from_addr: PeerAddr) -> None:
         if self.__ledger[-1].height > height:
