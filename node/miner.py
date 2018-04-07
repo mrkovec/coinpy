@@ -29,6 +29,16 @@ class Miner(object):
             self.__blk.nonce += 1
 
 
+def block_mine(blk: Block) -> Block:
+    logger.info(f'mining new block {blk}')
+    while True:
+        try:
+            Rules.block_valid_difficulty(blk)
+            return blk
+        except Exception as e:
+            pass
+        blk.nonce += 1
+
 class ExternalMiner(object):
     def __init__(self, loop: asyncio.AbstractEventLoop, addr: PeerAddr, mbq: multiprocessing.Queue, new_blk_fnc) -> None:
         self.__io_loop = loop

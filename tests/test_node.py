@@ -9,6 +9,20 @@ from coinpy.core.block import Block
 from coinpy.node.peer import Peer, PeerAddr
 
 logging.basicConfig(level=logging.DEBUG)
+
+class TestNodeStartup(unittest.TestCase):
+    def test_node_startup(self) -> None:
+        loop = asyncio.get_event_loop()
+        node = Node(loop, addr=PeerAddr(('127.0.0.1', 50011)))
+        async def _run() ->None:
+            start_t = loop.create_task(node.start())
+            await start_t
+            stop_t = loop.create_task(node.stop())
+            await stop_t
+            self.assertTrue(start_t.done())
+            self.assertTrue(stop_t.done())
+        loop.run_until_complete(_run())
+
 # class TestNodeGreet(unittest.TestCase):
 #     def setUp(self) -> None:
 #         asyncio.set_event_loop(None)
