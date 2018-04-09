@@ -69,16 +69,25 @@ class Command(Serializable):
 #     def __init__(self, trx: Transaction) -> None:
 #         super().__init__('newtrx', {'trx': trx})
 #
-# class GreetCommand(Command):
-#     name = 'greet'
-#     def __init__(self, blk_height: int) -> None:
-#         super().__init__(height=blk_height)
-#     @staticmethod
-#     def handler(ctx: Any, **kwargs:Any) -> None:
-#         logger.debug(f'running "{GreetCommand.name}" comand with {type(ctx)} {kwargs}')
-#         ctx.command_greet(kwargs['height'], kwargs['source_msg'].from_addr)
-#         # ctx.__peer.commnad_send(kwargs['source_msg'].from_addr, ReplyGreetCommand(ctx.__ledger[-1].height))
-#         # ctx.add_transaction(Transaction.unserialize(kwargs['trx']))
+class GreetCommand(Command):
+    name = 'greet'
+    def __init__(self, blk_height: int) -> None:
+        super().__init__(height=blk_height)
+    @staticmethod
+    def handler(ctx: Any, **kwargs:Any) -> None:
+        logger.debug(f'running "{GreetCommand.name}" comand with {type(ctx)}, {kwargs}')
+        ctx.command_greet_handler(kwargs['height'], kwargs['source_msg'].from_addr)
+
+class InfoCommand(Command):
+    name = 'info'
+    def __init__(self, blk_height: int) -> None:
+        super().__init__(height=blk_height)
+    @staticmethod
+    def handler(ctx: Any, **kwargs:Any) -> None:
+        logger.debug(f'running "{InfoCommand.name}" comand with {type(ctx)}, {kwargs}')
+        # ctx.command_greet(kwargs['height'], kwargs['source_msg'].from_addr)
+        # ctx.__peer.commnad_send(kwargs['source_msg'].from_addr, ReplyGreetCommand(ctx.__ledger[-1].height))
+        # ctx.add_transaction(Transaction.unserialize(kwargs['trx']))
 #
 # class ReplyGreetCommand(Command):
 #     name = 'regreet'
@@ -111,4 +120,4 @@ class AnnounceBlockCommand(Command):
     @staticmethod
     def handler(ctx: Any, **kwargs:Any) -> None:
         logger.debug(f'running "{AnnounceBlockCommand.name}" command with {type(ctx)} {kwargs}')
-        ctx.block_add(Block.unserialize(kwargs['blk']))
+        ctx.block_add_to_blockchain(Block.unserialize(kwargs['blk']))

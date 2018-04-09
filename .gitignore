@@ -53,3 +53,5 @@ tests/.coverage
 *.json
 keys/
 *.pem
+*.exe
+*.zip

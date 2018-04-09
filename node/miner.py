@@ -29,7 +29,7 @@ class Miner(object):
             self.__blk.nonce += 1
 
 
-def block_mine(blk: Block) -> Block:
+def block_mine_internal(blk: Block) -> Block:
     logger.info(f'mining new block {blk}')
     while True:
         try:
@@ -39,31 +39,35 @@ def block_mine(blk: Block) -> Block:
             pass
         blk.nonce += 1
 
+
 class ExternalMiner(object):
-    def __init__(self, loop: asyncio.AbstractEventLoop, addr: PeerAddr, mbq: multiprocessing.Queue, new_blk_fnc) -> None:
+    def __init__(self, loop: asyncio.AbstractEventLoop, addr: PeerAddr, new_blk_fnc) -> None:
         self.__io_loop = loop
         self.__addr = addr
-        self.__mbq = mbq
+        self.__mbq =  asyncio.Queue(1, loop = self.__io_loop)
         self.__new_blk_fnc = new_blk_fnc
-
-    async def run(self) -> None:
-        httpd = HTTPServer(self.__addr, external_miner_handler_factory(self.__mbq, self.__new_blk_fnc))
         logger.info(f'Starting ExternalMiner {self.__addr}')
+        self.__httpd = HTTPServer(self.__addr, external_miner_handler_factory(self.__io_loop, self.__mbq, self.__new_blk_fnc))
+
+    async def block_mine(self) -> Block:
         while True:
             try:
-                httpd.handle_request()
-                await asyncio.sleep(0.1, loop=self.__io_loop)
+                self.__io_loop.call_soon(self.__httpd.handle_request)
+                return self.__mbq.get_nowait()
+            except asyncio.QueueEmpty:
+                await asyncio.sleep(1, loop=self.__io_loop)
             except KeyboardInterrupt:
                 break
             except asyncio.CancelledError:
                 break
-        httpd.server_close()
+        self.__httpd.server_close()
         logger.info('Stopping ExternalMiner')
 
 
-def external_miner_handler_factory(mbq: multiprocessing.Queue, new_blk_fnc):
+def external_miner_handler_factory(loop, mbq, new_blk_fnc):
     class ExternalMinerHandler(BaseHTTPRequestHandler, object):
         def __init__(self, *args, **kwargs):
+            self.__io_loop = loop
             self.__mbq = mbq
             self.__block_assemble_new = new_blk_fnc
             super().__init__(*args, **kwargs)
@@ -81,27 +85,7 @@ def external_miner_handler_factory(mbq: multiprocessing.Queue, new_blk_fnc):
         def do_POST(self) -> None:
             content_length = int(self.headers['Content-Length'])
             post_data = self.rfile.read(content_length)
-            self.__mbq.put(Block.unserialize_json(post_data))
+            self.__io_loop.run_until_complete(self.__mbq.put(Block.unserialize_json(post_data)))
             self._set_response(200)
 
     return ExternalMinerHandler
-# class Scheduler(object):
-#     def __init__(self, gen: List[Iterator[int]] = []) -> None:
-#         self.active: List[Iterator[int]] = gen
-#         self.scheduled: List[Iterator[int]] = []
-#
-#     def add_microthread(self, gen: Iterator[int]) -> None:
-#         self.active.append(gen)
-#
-#     def run(self) -> Iterator[int]:
-#         while True:
-#             if len(self.active) == 0:
-#                 return
-#             for thread in self.active:
-#                 try:
-#                     next(thread)
-#                     self.scheduled.append(thread)
-#                 except StopIteration:
-#                     pass
-#                 yield 1
-#             self.active, self.scheduled = self.scheduled, []
