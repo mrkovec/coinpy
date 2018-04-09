@@ -3,6 +3,19 @@
 # coinpy
 Python implementation of a basic blockchain (bitcoin inspired and simplified) functionality for learning purposes (python3/asyncio/xmlrpc).
 
+For now, the best way to inspect working functionality is thru browsing unit and [behave](https://github.com/behave/behave) tests.
+
+```bash
+git clone https://github.com/mrkovec/coinpy.git
+pip install ecdsa
+pip install behave
+
+unittest discover
+behave
+```
+
+Functionality overview:
+
 - [x] output/transaction/block/ledger data and functionality design
 ```
 +---------------+    +----------------------------+      +-----------------------------+              
