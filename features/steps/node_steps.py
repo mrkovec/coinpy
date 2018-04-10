@@ -9,6 +9,7 @@ from coinpy.node.peer import PeerAddr
 from coinpy.node.commands import AnnounceBlockCommand, GreetCommand, InfoCommand
 from coinpy.node.miner import ExternalMiner
 
+
 @step('node "{node_name}" receives "{message}" message from node "{neighbor_node_name}"')
 def step_node_receive_message(context, node_name, message, neighbor_node_name):
     receive_task = context.async_loop.create_task(
@@ -21,6 +22,23 @@ def step_node_receive_message(context, node_name, message, neighbor_node_name):
         context.block_new[node_name] = Block.unserialize(msg.command.params['blk'])
 
 
+
+
+@step('node "{node_name}" sends "{message}" message to his neighbors')
+def step_node_send_message_to_neighbors(context, node_name, message):
+    def form_command(message):
+        if message == GreetCommand.name:
+            return GreetCommand(context.node[node_name].last_block.height)
+        if message == InfoCommand.name:
+            return InfoCommand(context.node[node_name].last_block.height)
+        if message == AnnounceBlockCommand.name:
+            return AnnounceBlockCommand(context.block_new[node_name])
+    send_task = context.async_loop.create_task(
+            context.node[node_name].commnad_send_bulk(
+                    form_command(message)))
+    context.async_loop.run_until_complete(send_task)
+    assert send_task.done() is True
+
 @step('node "{node_name}" sends "{message}" message to node "{neighbor_node_name}"')
 def step_node_send_message(context, node_name, message, neighbor_node_name):
     def form_command(message):
@@ -30,7 +48,6 @@ def step_node_send_message(context, node_name, message, neighbor_node_name):
             return InfoCommand(context.node[node_name].last_block.height)
         if message == AnnounceBlockCommand.name:
             return AnnounceBlockCommand(context.block_new[node_name])
-
     send_task = context.async_loop.create_task(
             context.node[node_name].command_send(
                     context.node[neighbor_node_name].addr,
@@ -104,7 +121,7 @@ def step_node_mine_block(context, node_name):
     context.block_new[node_name] = context.async_loop.run_until_complete(mine_task)
     assert mine_task.done() is True
 
-    # os.system(miner_executable)
+
 # @when('node mines new block')
 # def step_node_mine(context):
 #      context.execute_steps('When node "A" mines new block')
