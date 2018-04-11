@@ -4,7 +4,7 @@ from typing import Dict
 from coinpy.core.crypto import Pubkey, ID
 from coinpy.core.block import Block
 from coinpy.core.transaction import Transaction, Utils
-from coinpy.core.errors import ConsensusError, BlockRulesError, TransactionRulesError
+from coinpy.core.errors import BlockRulesError, TransactionRulesError
 
 from coinpy.core.output import OutputID
 
@@ -22,7 +22,7 @@ class Rules(object):
 
             Rules.block_valid_difficulty(new)
         else:
-            raise ConsensusError('wrong block version')
+            raise BlockRulesError('wrong block version')
 
     @staticmethod
     def block_valid_difficulty(blk: Block) -> None:
@@ -77,4 +77,4 @@ class Rules(object):
             if sum_outp > sum_inp:
                 raise TransactionRulesError('wrong trx balance')
         else:
-            raise ConsensusError('wrong trx version')
+            raise BlockRulesError('wrong trx version')

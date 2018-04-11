@@ -2,12 +2,37 @@ from behave import given, when, then, step
 from behave.api.async_step import use_or_create_async_context, AsyncContext
 import asyncio
 import os
+from unittest.mock import MagicMock
 
 from coinpy.node.node import Node
 from coinpy.core.block import Block
 from coinpy.node.peer import PeerAddr
 from coinpy.node.commands import AnnounceBlockCommand, GreetCommand, InfoCommand
 from coinpy.node.miner import ExternalMiner
+
+
+@step('node "{node_name}" and node "{neighbor_node_name}" blockchains are identic')
+def step_node_blockchains_identic(context, node_name, neighbor_node_name):
+    for i in range(context.node[node_name].last_block.height):
+        assert context.node[node_name].block_at_height(i).id == context.node[neighbor_node_name].block_at_height(i).id
+
+@step('node "{node_name}" has "{num_block:d}" blocks in his blockchain')
+def step_generate_blocks(context, node_name, num_block):
+    for _ in range(num_block):
+        context.execute_steps(f'''
+            When node "{node_name}" mines new block
+            And node "{node_name}" validates new block
+            Then node "{node_name}" adds new block to his blockchain
+             ''')
+
+
+@step('node "{node_name}" executes "{message}" command')
+def step_node_command_run(context, node_name, message):
+    # if message == InfoCommand.name:
+    #     context.node[node_name].command_info_handler = MagicMock()
+    context.node[node_name].command_execute(context.node[node_name].msg_received)
+    # if message == InfoCommand.name:
+    #     context.node[node_name].command_info_handler.assert_called_once()
 
 
 @step('node "{node_name}" receives "{message}" message from node "{neighbor_node_name}"')
@@ -18,10 +43,10 @@ def step_node_receive_message(context, node_name, message, neighbor_node_name):
     assert receive_task.done() is True
     assert msg.command.name == message
     assert msg.from_addr == list(context.node[neighbor_node_name].addr)
+    context.node[node_name].msg_received = msg
     if message == AnnounceBlockCommand.name:
         context.block_new[node_name] = Block.unserialize(msg.command.params['blk'])
-
-
+    # if message == InfoCommand.name:
 
 
 @step('node "{node_name}" sends "{message}" message to his neighbors')
@@ -94,8 +119,9 @@ def step_node_mine_block(context, node_name):
 
 @step('node "{node_name}" adds new block to his blockchain')
 def step_node_store_block(context, node_name):
+    height_prev = context.node[node_name].last_block.height
     context.node[node_name].block_add_to_blockchain(context.block_new[node_name])
-    assert context.node[node_name].last_block.height == 1
+    assert context.node[node_name].last_block.height == height_prev + 1
 
 @step('node "{node_name}" listens for external mined block')
 def step_node_listen_external_miner(context, node_name):
@@ -108,7 +134,6 @@ def step_node_listen_external_miner(context, node_name):
     # context.block_new[node_name] = context.async_loop.run_until_complete(mine_task)
     # assert mine_task.done() is True
 
-    #
 @step('we have running "{miner_executable}"')
 def step_external_miner_run(context, miner_executable):
     # subprocess.call(miner_executable, shell=True)

@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Callable
+from typing import Any, Callable, List
 # from typing import Iterator, List, Tuple, NewType, Dict, Callable, Any
 from mypy_extensions import KwArg, Arg
 
@@ -8,27 +8,13 @@ from coinpy.core.crypto import Serializable
 from coinpy.core.transaction import Transaction
 from coinpy.core.block import Block
 
-
-
-# import coinpy.node.peer as peer
-
-# from coinpy.core.crypto import (
-#     Serializable
-# )
-# from .node import Node
-
 from coinpy.core.errors import (
     ValidationError
 )
 
-
-
-# logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-
 CommandHandler = Callable[[Arg(Any, 'ctx'), KwArg(Any)], None]
-# CommandHandler = Callable[[Arg(Any), KwArg(Any)], None]
 
 class Command(Serializable):
     name = 'undefined'
@@ -50,25 +36,6 @@ class Command(Serializable):
         raise NotImplementedError('Command.handler')
 
 
-
-
-
-# CommandHandler = NewType('CommandHandler', Dict[str, Callable[[Arg(Any), KwArg(Any)], None]])
-
-
-
-# class GreetCommand(Command):
-#     name = 'great'
-#     @staticmethod
-#     def handler(p: Any, **kwargs:Any) -> None:
-#         print(f'{GreetCommand.name} from {kwargs["source_msg"].from_addr}')
-
-#
-#
-# class AnnounceTrxCommand(Command):
-#     def __init__(self, trx: Transaction) -> None:
-#         super().__init__('newtrx', {'trx': trx})
-#
 class GreetCommand(Command):
     name = 'greet'
     def __init__(self, blk_height: int) -> None:
@@ -76,37 +43,18 @@ class GreetCommand(Command):
     @staticmethod
     def handler(ctx: Any, **kwargs:Any) -> None:
         logger.debug(f'running "{GreetCommand.name}" comand with {type(ctx)}, {kwargs}')
-        ctx.command_greet_handler(kwargs['height'], kwargs['source_msg'].from_addr)
+        ctx.command_greet_handler(kwargs['height'], tuple(kwargs['source_msg'].from_addr))
+
 
 class InfoCommand(Command):
     name = 'info'
-    def __init__(self, blk_height: int) -> None:
-        super().__init__(height=blk_height)
+    def __init__(self, blocks_insert: List[Block]) -> None:
+        super().__init__(blocks_insert=blocks_insert)
     @staticmethod
     def handler(ctx: Any, **kwargs:Any) -> None:
         logger.debug(f'running "{InfoCommand.name}" comand with {type(ctx)}, {kwargs}')
-        # ctx.command_greet(kwargs['height'], kwargs['source_msg'].from_addr)
-        # ctx.__peer.commnad_send(kwargs['source_msg'].from_addr, ReplyGreetCommand(ctx.__ledger[-1].height))
-        # ctx.add_transaction(Transaction.unserialize(kwargs['trx']))
-#
-# class ReplyGreetCommand(Command):
-#     name = 'regreet'
-#     def __init__(self, blk_height: int) -> None:
-#         super().__init__(height=blk_height)
-#     @staticmethod
-#     def handler(ctx: Any, **kwargs:Any) -> None:
-#         logger.debug(f'running "{ReplyGreetCommand.name}" comand with {type(ctx)} {kwargs}')
-#         ctx.command_replygreet()
-#         # ctx.add_transaction(Transaction.unserialize(kwargs['trx']))
-#
-# class AnnounceTransactionCommand(Command):
-#     name = 'newtrx'
-#     def __init__(self, trx: Transaction) -> None:
-#         super().__init__(trx=trx)
-#     @staticmethod
-#     def handler(ctx: Any, **kwargs:Any) -> None:
-#         logger.debug(f'running "{AnnounceTransactionCommand.name}" comand with {type(ctx)} {kwargs}')
-#         ctx.add_transaction(Transaction.unserialize(kwargs['trx']))
+        ctx.command_info_handler(kwargs['blocks_insert'])
+
 
 class AnnounceBlockCommand(Command):
     name = 'newblock'

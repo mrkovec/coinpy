@@ -12,17 +12,18 @@ import os
 
 import json
 
+from coinpy.core import JsonDict
 from coinpy.core.block import Block, GENESIS_BLOCK
 from coinpy.core.output import Output, OutputID
 from coinpy.core.transaction import Transaction, TransactionID, Utils
 from coinpy.core.crypto import Pubaddr, PrivkeyStorage, ID
 from coinpy.core.errors import TransactionRulesError
 
-from .consensus import Rules
+from .consensus import Rules, BlockRulesError, TransactionRulesError
 from .miner import Miner, ExternalMiner, block_mine_internal
 from .peer import Peer, PeerAddr, Message
 
-from .commands import AnnounceBlockCommand, InfoCommand
+from .commands import AnnounceBlockCommand, InfoCommand, GreetCommand
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +42,10 @@ class Node(Peer):
     async def start(self) -> None:
         logger.info(f'starting node with {self.config}')
         await  super().start()
-        self.commnads_register([(self, AnnounceBlockCommand)])
+        self.commnads_register(
+                [(self, AnnounceBlockCommand),
+                 (self, GreetCommand),
+                 (self, InfoCommand)])
 
     async def stop(self) -> None:
         logger.info('stopping node')
@@ -102,15 +106,37 @@ class Node(Peer):
         blk = self.block_assemble_new_full()
         return await self.__io_loop.run_in_executor(None, functools.partial(block_mine_internal, blk))
 
-    def external_miner_start(self, addr) -> None:
+    def external_miner_start(self, addr: PeerAddr) -> None:
         self.__ext_miner = ExternalMiner(self.__io_loop, addr, self.block_assemble_new_full)
 
     async def block_mine_external(self) -> Block:
         return await self.__ext_miner.block_mine()
 
     def command_greet_handler(self, height: int, to_addr: PeerAddr) -> None:
-        logger.debug(f'command_greet_reply {height} {to_addr}')
-        self.__io_loop.create_task(self.command_send(to_addr, InfoCommand(self.last_block.height)))
+        logger.debug(f'command_greet_handler {height} {to_addr}')
+        if height != self.last_block.height:
+            blocks_to_send = [blk for blk in self.__ledger if blk.height > height]
+            self.__io_loop.create_task(self.command_send(to_addr, InfoCommand(blocks_to_send)))
+
+    def command_info_handler(self,  blocks_insert: List[JsonDict]) -> None:
+        logger.debug(f'command_info_handler {blocks_insert}')
+        #merge blockchains parts
+        blks_m = [Block.unserialize(blk_str) for blk_str in blocks_insert]
+        head_idx = -1
+        for i in range(len(blks_m)):
+            try:
+                Rules.block_valid(self.__ledger[-1], blks_m[i])
+                #have head for merging
+                head_idx = i
+                break
+            except (BlockRulesError, TransactionRulesError):
+                pass
+        if head_idx < 0 or head_idx > 10:
+            logger.error('possible fork')
+            return
+        for i in range(head_idx, len(blks_m)):
+            self.block_add_to_blockchain(blks_m[i])
+
 
     @property
     def unprocessed_transactions(self) -> Dict[TransactionID, Transaction]:
@@ -121,3 +147,6 @@ class Node(Peer):
     @property
     def last_block(self) -> Block:
         return self.__ledger[-1]
+
+    def block_at_height(self, height: int) -> Block:
+        return [blk for blk in self.__ledger if blk.height == height][0]

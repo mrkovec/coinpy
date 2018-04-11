@@ -150,10 +150,8 @@ class Peer(object):
         logger.debug(f'sending {type(comm)} commnad {comm} to {self.__neighbors_addr}')
         m = Message(comm, self.addr)
         await asyncio.wait([self.msg_send(addr, m) for addr in self.__neighbors_addr])
-        # for addr in self.__neighbors_addr:
-        #     self.msg_send(addr, m)
 
-    def command_run(self, msg: Message) -> None:
+    def command_execute(self, msg: Message) -> None:
         logger.debug(f'executing "{msg.command}"{self.__registered_commands[msg.command.name]}')
         ctx, comm_handler = self.__registered_commands[msg.command.name]
         comm_handler(ctx, **{**msg.command.params, 'source_msg': msg})

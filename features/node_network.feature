@@ -26,3 +26,17 @@ Feature: Nodes forming network
       And node "A" stops
       And node "B" stops
       And node "C" stops
+
+  Scenario: Node synchronizes his blockchain with neighbors
+    Given we have running node "A"
+      And we have running node "B"
+      And node "B" is neighbor of node "A"
+      And node "B" has "3" blocks in his blockchain
+    When node "A" sends "greet" message to his neighbors
+    Then node "B" receives "greet" message from node "A"
+      And node "B" executes "greet" command
+    Then node "A" receives "info" message from node "B"
+      And node "A" executes "info" command
+    Then node "A" and node "B" blockchains are identic
+      And node "A" stops
+      And node "B" stops
