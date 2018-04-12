@@ -93,20 +93,16 @@ class Peer(object):
         self.__neighbors_addr: List[PeerAddr] = []
         self.__registered_commands: Dict[str, Tuple[Any, CommandHandler]] = {}
         self.__io_loop = loop
+        self.__msg_queue: asyncio.Queue = asyncio.Queue(loop=self.__io_loop) # type: ignore
 
     async def start(self) ->None:
         logger.info(f'starting peer {self.addr}')
-        self.__msg_queue: asyncio.Queue = asyncio.Queue(loop=self.__io_loop) # type: ignore
         self.__transport, _ = await self.__io_loop.create_datagram_endpoint(
                 functools.partial(PeerListener, self.__msg_queue, self.__io_loop),
                 local_addr=self.addr)
-        # self.__msg_handle_task = self.__io_loop.create_task(self.msg_handle())
 
     async def stop(self) -> None:
         logger.info(f'stopping peer {self.addr}')
-        # cancel msg_process
-        # self.__msg_handle_task.cancel()
-        # await self.__msg_handle_task
         self.__transport.close()
 
     async def msg_send(self, addr: PeerAddr, msg: Message) -> None:
@@ -123,7 +119,8 @@ class Peer(object):
         logger.debug('waiting for messages')
         while True:
             try:
-                pass
+                msg = await self.msg_receive()
+                self.command_execute(msg)
             except asyncio.CancelledError:
                 # logger.info("waiting for messages stopped")
                 return

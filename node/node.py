@@ -38,14 +38,14 @@ class Node(Peer):
         super().__init__(self.__io_loop, self.config.get('addr', PeerAddr(('127.0.0.1', 5001))))
         if 'neighbors' in self.config:
             self.neighbors_add(self.config['neighbors'])
-
-    async def start(self) -> None:
-        logger.info(f'starting node with {self.config}')
-        await  super().start()
         self.commnads_register(
                 [(self, AnnounceBlockCommand),
                  (self, GreetCommand),
                  (self, InfoCommand)])
+
+    async def start(self) -> None:
+        logger.info(f'starting node with {self.config}')
+        await  super().start()
 
     async def stop(self) -> None:
         logger.info('stopping node')
@@ -105,6 +105,17 @@ class Node(Peer):
     async def block_mine(self) -> Block:
         blk = self.block_assemble_new_full()
         return await self.__io_loop.run_in_executor(None, functools.partial(block_mine_internal, blk))
+
+    async def block_mine_handle(self) -> None:
+        logger.debug('mining blocks')
+        while True:
+            try:
+                blk = await self.block_mine()
+                self.block_add_to_blockchain(blk)
+            except asyncio.CancelledError:
+                return
+            except Exception as e:
+                logger.exception(str(e))
 
     def external_miner_start(self, addr: PeerAddr) -> None:
         self.__ext_miner = ExternalMiner(self.__io_loop, addr, self.block_assemble_new_full)
