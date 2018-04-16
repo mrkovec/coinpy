@@ -12,8 +12,8 @@ python -m pip install mypy_extensions
 python -m pip install ecdsa
 python -m pip install behave
 
-unittest discover
-behave
+python -m unittest discover
+python -m behave
 ```
 Also is possible to inspect nodes communication with:
 
