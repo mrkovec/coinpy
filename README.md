@@ -7,11 +7,28 @@ For now, the best way to inspect working functionality is thru browsing unit and
 
 ```bash
 git clone https://github.com/mrkovec/coinpy.git
-pip install ecdsa
-pip install behave
+python -m pip install mypy
+python -m pip install mypy_extensions
+python -m pip install ecdsa
+python -m pip install behave
 
 unittest discover
 behave
+```
+Also is possible to inspect nodes communication with:
+
+Runing first node
+```bash
+python -m main daemon -bind 127.0.0.1 5001 -rpc 127.0.0.1 6001
+```
+Runing second node
+```bash
+python -m main daemon -bind 127.0.0.1 5002 -addnode 127.0.0.1 5001 -gen -rpc 127.0.0.1 6002
+```
+inspecting log outputs and fterwards quitting nodes 
+```bash
+python -m main cli -stop 127.0.0.1 6001
+python -m main cli -stop 127.0.0.1 6002
 ```
 
 Functionality overview:
@@ -78,7 +95,9 @@ Functionality overview:
 - [x] peer-to-peer functionality
 - [x] consensus rules
 - [x] block assembling, mining, announcing and chaining
-- [ ] between nodes blockchain sync / fork merging
+- [x] between nodes blockchain sync 
+- [x] basic daemon / cli functionality
+- [ ] fork merging
 - [ ] blockchain persistence
 - [ ] wallet functionality
 - [ ] NAT traversal

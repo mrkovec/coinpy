@@ -1,6 +1,6 @@
 import logging
 import json
-from typing import Iterator, List, Tuple, NewType, Dict, Callable, Any, Type, Iterable
+from typing import Iterator, List, Tuple, NewType, Dict, Callable, Any, Type, Iterable, Set
 from mypy_extensions import KwArg, Arg
 import asyncio
 import functools
@@ -146,7 +146,8 @@ class Peer(object):
     async def commnad_send_bulk(self, comm: Command) -> None:
         logger.debug(f'sending {type(comm)} commnad {comm} to {self.__neighbors_addr}')
         m = Message(comm, self.addr)
-        await asyncio.wait([self.msg_send(addr, m) for addr in self.__neighbors_addr])
+        if len(self.__neighbors_addr) > 0:
+            await asyncio.wait([self.msg_send(addr, m) for addr in self.__neighbors_addr])
 
     def command_execute(self, msg: Message) -> None:
         logger.debug(f'executing "{msg.command}"{self.__registered_commands[msg.command.name]}')

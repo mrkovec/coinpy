@@ -112,6 +112,7 @@ class Node(Peer):
             try:
                 blk = await self.block_mine()
                 self.block_add_to_blockchain(blk)
+                await self.commnad_send_bulk(AnnounceBlockCommand(blk))
             except asyncio.CancelledError:
                 return
             except Exception as e:
@@ -125,6 +126,7 @@ class Node(Peer):
 
     def command_greet_handler(self, height: int, to_addr: PeerAddr) -> None:
         logger.debug(f'command_greet_handler {height} {to_addr}')
+        self.neighbors_add([to_addr])
         if height != self.last_block.height:
             blocks_to_send = [blk for blk in self.__ledger if blk.height > height]
             self.__io_loop.create_task(self.command_send(to_addr, InfoCommand(blocks_to_send)))
