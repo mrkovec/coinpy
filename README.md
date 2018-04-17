@@ -23,7 +23,7 @@ python -m coinpyd -bind localhost:5001 -rpcbind localhost:6001
 ```
 runing second node
 ```bash
-python -m coinpyd -bind localhost:5002 -addnode  localhost:5001 -gen -rpcbind localhost:6002
+python -m coinpyd -bind localhost:5002 -addnode localhost:5001 -gen -rpcbind localhost:6002
 ```
 inspecting log outputs and afterwards quitting nodes 
 ```bash
