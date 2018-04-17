@@ -104,12 +104,12 @@ class CoinpyDaemon(object):
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(prog='coinpy', description=f'coinpy v{COINPYD_VERSION}')
-    parser.add_argument('-bind', metavar='addr', required=True, type=CoinpyCLI.proc_addr, help='The addres %(prog)s will listens on. Default %(default)s.')
-    parser.add_argument('-rpcbind', metavar='addr', type=CoinpyCLI.proc_addr)
+    parser = argparse.ArgumentParser(prog='coinpyd', description=f'coinpy v{COINPYD_VERSION}')
+    parser.add_argument('-bind', metavar='addr', required=True, type=CoinpyCLI.proc_addr, help='address in [host]:port form.')
+    parser.add_argument('-rpcbind', metavar='addr', type=CoinpyCLI.proc_addr, help='address in [host]:port form.')
     parser.add_argument('-gen', action='store_true', default=False, help='Mine new blocks? Default %(default)s.')
     # parser.add_argument('-genext', action='store_true', default=False, help='Use external miner for mining? Default %(default)s.')
-    parser.add_argument('-addnode', metavar='addr', type=CoinpyCLI.proc_addr, action='append', help='Neighbor peer to connect to.')
+    parser.add_argument('-addnode', metavar='addr', type=CoinpyCLI.proc_addr, action='append', help='address in [host]:port form.')
     # parser_daemon.add_argument('-saveconf', action='store_true', default=False, help='Save settings into conf file? Default %(default)s.')
     parser.set_defaults(func=CoinpyDaemon)
     args = parser.parse_args()

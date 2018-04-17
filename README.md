@@ -19,16 +19,16 @@ Also is possible to inspect nodes communication with:
 
 runing first node
 ```bash
-python -m coinpyd -bind localhost:5001 -rpcbind localhost:6001 
+python -m coinpyd -bind :5001 -rpcbind :6001 
 ```
 runing second node
 ```bash
-python -m coinpyd -bind localhost:5002 -addnode  localhost:5001 -gen -rpcbind localhost:6002
+python -m coinpyd -bind :5002 -addnode :5001 -gen -rpcbind :6002
 ```
 inspecting log outputs and afterwards quitting nodes 
 ```bash
-python -m coinpycli stop 127.0.0.1:6001
-python -m coinpycli stop 127.0.0.1:6002
+python -m coinpycli stop :6001
+python -m coinpycli stop :6002
 ```
 
 Functionality overview:

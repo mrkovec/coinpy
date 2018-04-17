@@ -15,6 +15,8 @@ class CoinpyCLI(object):
     def proc_addr(addr: str) -> Tuple[str, str, int]:
         p = urlparse(addr, 'http')
         netloc = p.netloc or p.path
+        if netloc.startswith(':'):
+            netloc = 'localhost' + netloc
         path = p.path if p.netloc else ''
         p = ParseResult('http', netloc, path, '', '', '')
         return (p.geturl(), p.hostname, p.port)
@@ -26,16 +28,16 @@ class CoinpyCLI(object):
             logger.debug(proxy.stop())
 
 def main() -> None:
-    parser = argparse.ArgumentParser(prog='coinpy-cli', description=f'%(prog)s v{COINPYCLI_VERSION}')
+    parser = argparse.ArgumentParser(prog='coinpycli', description=f'%(prog)s v{COINPYCLI_VERSION}')
     # parser.add_argument('--verbose', '-v', action='count')
     subparsers = parser.add_subparsers(title='commands', description='valid %(prog)s commands')
     parser_stop = subparsers.add_parser('stop')
-    parser_stop.add_argument('addr', type=CoinpyCLI.proc_addr)
+    parser_stop.add_argument('addr', type=CoinpyCLI.proc_addr, help='coinpyd rpc address in [host]:port form.')
     parser_stop.set_defaults(func=CoinpyCLI.stop_cmd)
 
-    # parser_addnode = subparsers.add_parser('addnode')
-    # parser_addnode.add_argument('addr', type=CoinpyCLI.proc_addr)
-    # parser_cli.set_defaults(func=CoinpyCLI)
+    parser_addnode = subparsers.add_parser('addnode')
+    parser_addnode.add_argument('addr', type=CoinpyCLI.proc_addr)
+    parser_addnode.set_defaults(func=CoinpyCLI)
 
     args = parser.parse_args()
     try:
