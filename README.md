@@ -97,7 +97,7 @@ Functionality overview:
 - [x] block assembling, mining, announcing and chaining
 - [x] between nodes blockchain sync 
 - [x] basic daemon / cli functionality
-- [ ] fork merging
+- [ ] fork detection & merging
 - [ ] blockchain persistence
 - [ ] wallet functionality
 - [ ] NAT traversal
